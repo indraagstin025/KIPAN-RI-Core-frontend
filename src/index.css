@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+
+  --color-kipan-navy: #0d3f70;
+  --color-kipan-blue: #0e6cac;
+  --color-kipan-yellow: #facb04;
+  --color-kipan-red: #a51314;
+  --color-kipan-green: #3a7662;
+  --color-kipan-soft-blue: #f2f7fb;
+  --color-kipan-soft-gray: #f5f6f8;
+  --color-kipan-text-dark: #172033;
+  --color-kipan-text-muted: #667085;
+  --color-kipan-border: #e5e7eb;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-kipan-text-dark);
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reveal-on-scroll (pengganti framer-motion, CMS ScrollReveal) */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
