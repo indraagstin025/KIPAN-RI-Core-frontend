@@ -5,7 +5,6 @@ import { ApiError } from '@/services/apiClient';
 import { getMyKta } from '../api/ktaService';
 
 export default function KtaSayaPage() {
-  const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -14,7 +13,6 @@ export default function KtaSayaPage() {
     setError(null);
     try {
       const res = await getMyKta();
-      setUrl(res.download_url);
       window.open(res.download_url, '_blank', 'noopener');
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'KTA belum tersedia');
@@ -41,7 +39,6 @@ export default function KtaSayaPage() {
             {loading ? (<><Spinner size={15} light /> Menyiapkan...</>) : 'Unduh KTA'}
           </button>
         </div>
-        {url && <p className="mt-3 break-all text-xs text-kipan-text-muted">URL tiket: {url}</p>}
       </Card>
     </div>
   );

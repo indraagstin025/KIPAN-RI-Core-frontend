@@ -95,8 +95,8 @@ export default function LacakPage() {
                   <StatusBadge status={hasil.status} label={hasil.status_label} />
                 </div>
                 <dl className="mt-4 grid gap-2 text-xs text-kipan-text-muted sm:grid-cols-2">
-                  <div><dt>Diajukan</dt><dd className="font-semibold text-kipan-text-dark">{new Date(hasil.created_at).toLocaleString('id-ID')}</dd></div>
-                  <div><dt>Diperbarui</dt><dd className="font-semibold text-kipan-text-dark">{new Date(hasil.updated_at).toLocaleString('id-ID')}</dd></div>
+                  <div><dt>Tanggal Daftar</dt><dd className="font-semibold text-kipan-text-dark">{new Date(hasil.created_at).toLocaleString('id-ID')}</dd></div>
+                  <div><dt>Terakhir Diperbarui</dt><dd className="font-semibold text-kipan-text-dark">{new Date(hasil.updated_at).toLocaleString('id-ID')}</dd></div>
                 </dl>
                 {hasil.status === 'PERBAIKAN' && (
                   <div className="mt-4 rounded-lg border border-orange-200 bg-orange-50 p-3 text-xs text-orange-700">

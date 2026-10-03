@@ -23,6 +23,8 @@ export interface PendaftaranDetail {
   alamat: string;
   provinsi_id: number;
   kabupaten_id: number;
+  provinsi_nama?: string;
+  kabupaten_nama?: string;
   kecamatan: string;
   desa: string;
   kode_pos: string;

@@ -95,7 +95,7 @@ export default function RevisiPage() {
             <div className="mt-6 rounded-2xl border border-kipan-border bg-white p-8 text-center shadow-sm">
               <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-kipan-green text-2xl text-white">✓</span>
               <h2 className="mt-4 text-xl font-bold text-kipan-text-dark">Revisi Terkirim</h2>
-              <p className="mt-2 text-sm text-kipan-text-muted">Status pendaftaran kembali ke DIAJUKAN dan akan diverifikasi ulang.</p>
+              <p className="mt-2 text-sm text-kipan-text-muted">Status pendaftaran kembali ke DRAFT dan akan diverifikasi ulang.</p>
             </div>
           ) : (
             <div className="mt-6 rounded-2xl border border-kipan-border bg-white p-6 shadow-sm sm:p-8">

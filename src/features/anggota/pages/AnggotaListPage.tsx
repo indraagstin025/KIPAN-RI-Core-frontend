@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ErrorBox, Loading, PageHeader, Pagination, StatusBadge } from '@/components/ui/stateful';
+import Button from '@/components/ui/button';
+import { CursorPager, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
+import { useDebouncedValue } from '@/hooks/useDebounced';
 import { ApiError } from '@/services/apiClient';
-import { adminListAnggota } from '../api/anggotaService';
+import { adminListAnggotaCursor } from '../api/anggotaService';
 import type { AnggotaDetail } from '../types';
 
 const STATUS_OPTIONS = ['', 'AKTIF', 'NONAKTIF', 'DEMISIONER', 'DIBERHENTIKAN', 'MENINGGAL'];
@@ -10,10 +12,11 @@ const STATUS_OPTIONS = ['', 'AKTIF', 'NONAKTIF', 'DEMISIONER', 'DIBERHENTIKAN', 
 export default function AnggotaListPage() {
   const [items, setItems] = useState<AnggotaDetail[]>([]);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [cursor, setCursor] = useState('');
+  const [history, setHistory] = useState<string[]>([]);
+  const [nextCursor, setNextCursor] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,52 +24,55 @@ export default function AnggotaListPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await adminListAnggota({ page, limit: 10, status: status || undefined, search: search || undefined });
+      const res = await adminListAnggotaCursor({
+        limit: 10,
+        status: status || undefined,
+        search: debouncedSearch || undefined,
+        cursor: cursor || undefined,
+      });
       setItems(res.data);
-      setTotalPages(res.meta.total_pages);
-      setTotal(res.meta.total);
+      setNextCursor(res.nextCursor);
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal memuat data anggota');
     } finally {
       setLoading(false);
     }
-  }, [page, status, search]);
+  }, [status, debouncedSearch, cursor]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  function submitSearch(e: React.FormEvent): void {
-    e.preventDefault();
-    setPage(1);
-    void load();
+  function resetPaging(): void {
+    setCursor('');
+    setHistory([]);
   }
 
   return (
     <div>
-      <PageHeader title="Data Anggota" desc={`${total} kader ber-NIA sesuai cakupan wilayah Anda.`} />
+      <PageHeader
+        title="Data Anggota"
+        desc={`Menampilkan ${items.length} kader ber-NIA (keyset).`}
+        action={<Button variant="outline-navy" onClick={() => window.print()}>Cetak / PDF</Button>}
+      />
 
-      <form onSubmit={submitSearch} className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); resetPaging(); }}
           placeholder="Cari nama atau NIA"
           className="w-full max-w-xs rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
         />
         <select
           value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => { setStatus(e.target.value); resetPaging(); }}
           className="rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>{s === '' ? 'Semua status' : s}</option>
           ))}
         </select>
-        <button type="submit" className="rounded-lg bg-kipan-blue px-5 py-2.5 text-sm font-semibold text-white hover:bg-kipan-navy">Cari</button>
-      </form>
+      </div>
 
       {error && <ErrorBox message={error} />}
       {loading ? (
@@ -101,7 +107,21 @@ export default function AnggotaListPage() {
           </table>
         </div>
       )}
-      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+
+      <CursorPager
+        hasPrev={history.length > 0}
+        hasNext={nextCursor !== ''}
+        onPrev={() => {
+          const h = [...history];
+          const prev = h.pop();
+          setHistory(h);
+          setCursor(prev ?? '');
+        }}
+        onNext={() => {
+          setHistory([...history, cursor]);
+          setCursor(nextCursor);
+        }}
+      />
     </div>
   );
 }

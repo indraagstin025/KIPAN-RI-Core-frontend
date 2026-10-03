@@ -43,7 +43,7 @@ export default function CekAnggotaPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value.toUpperCase())}
-                placeholder="KIPAN-32-3273-2026-00001"
+                placeholder="KIPAN-IND-3204-2026-000001"
                 className="w-full rounded-lg border border-kipan-border px-3.5 py-2.5 text-sm uppercase focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
               />
               <Button variant="primary" disabled={loading} onClick={() => void cek()}>

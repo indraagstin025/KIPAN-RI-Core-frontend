@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import LandingLayout from '@/components/Layout/LandingLayout';
 import Button from '@/components/ui/button';
 import { Spinner, Overlay } from '@/components/ui/loading';
@@ -14,7 +14,7 @@ import { saveRegistration } from '@/features/tracking/lib/registrationHistory';
 import { clearDraft, loadDraft, saveDraft, type RegDraft } from '../lib/draft';
 import { ageOf, hasAngleBracket, isPlausibleNIKDate, validators } from '../hooks/useValidation';
 import { useWilayah } from '../hooks/useWilayah';
-import type { DokumenCategory, PendaftaranCreated, TipePendaftaran } from '../types';
+import type { DokumenCategory, PendaftaranCreated } from '../types';
 import { Alert, Field, SelectInput, Stepper, TextArea, TextInput } from '../components/fields';
 
 // FIELD_MAP memetakan nama field backend (JSON Go) ke kunci error form,
@@ -38,11 +38,9 @@ const FIELD_MAP: Record<string, string> = {
   whatsapp: 'wa',
   wa_otp_token: 'otp',
   motivation: 'motivasi',
-  tipe_pendaftaran: 'tipe',
   foto_key: 'foto',
   ktp_key: 'ktp',
   cv_key: 'cv',
-  sk_key: 'sk',
   surat_pernyataan_key: 'surat_pernyataan',
   surat_sehat_key: 'surat_sehat',
 };
@@ -59,16 +57,15 @@ function mapServerFields(fields: Record<string, string>): Record<string, string>
   // agar pengguna otomatis dibawa ke input yang bermasalah.
   const STEP1_KEYS = ['nama', 'nik', 'tempat', 'tanggal', 'jk', 'agama', 'pendidikan', 'pekerjaan', 'alamat', 'prov', 'kab', 'kec', 'desa', 'kodepos'];
   const STEP2_KEYS = ['email', 'wa', 'otp', 'motivasi'];
-  const STEP3_KEYS = ['foto', 'ktp', 'cv', 'sk', 'surat_pernyataan', 'surat_sehat'];
+  const STEP3_KEYS = ['foto', 'ktp', 'cv', 'surat_pernyataan', 'surat_sehat'];
   const STEP4_KEYS = ['persyaratan'];
 
 function stepForKey(key: string): number {
-  if (key === 'tipe') return 0;
-  if (STEP1_KEYS.includes(key)) return 1;
-  if (STEP2_KEYS.includes(key)) return 2;
-  if (STEP3_KEYS.includes(key)) return 3;
-  if (STEP4_KEYS.includes(key)) return 4;
-  return 5;
+  if (STEP1_KEYS.includes(key)) return 0;
+  if (STEP2_KEYS.includes(key)) return 1;
+  if (STEP3_KEYS.includes(key)) return 2;
+  if (STEP4_KEYS.includes(key)) return 3;
+  return 4;
 }
 
 // draftHasContent: draf dianggap berisi bila ada satu saja isian/dokumen
@@ -77,19 +74,18 @@ function stepForKey(key: string): number {
 function draftHasContent(d: RegDraft | null): boolean {
   if (!d) return false;
   if (d.step > 0) return true;
-  const textKeys: Array<keyof Omit<RegDraft, 'step' | 'tipe' | 'docs'>> = [
+  const textKeys: Array<keyof Omit<RegDraft, 'step' | 'docs'>> = [
     'nama', 'nik', 'tempat', 'tanggal', 'jk', 'agama', 'pendidikan', 'pekerjaan',
     'alamat', 'prov', 'kab', 'kec', 'desa', 'kodepos', 'email', 'wa', 'motivasi',
   ];
   if (textKeys.some((k) => d[k] && String(d[k]).trim() !== '')) return true;
-  if (d.tipe && d.tipe !== 'KADER') return true;
   if ((d.persyaratan ?? []).length > 0) return true;
   return Object.values(d.docs ?? {}).some((s) => s && s.key !== '');
 }
 
 
 
-const STEPS = ['Jalur', 'Data Diri', 'Kontak & OTP', 'Dokumen', 'Persyaratan', 'Kirim'];
+const STEPS = ['Data Diri', 'Kontak & OTP', 'Dokumen', 'Persyaratan', 'Kirim'];
 
 interface DocState {
   key: string;
@@ -109,17 +105,14 @@ const emptyDocs = (): Record<DokumenCategory, DocState> => ({
 });
 
 export default function DaftarPage() {
-  const [params] = useSearchParams();
-  const awal = params.get('tipe') === 'pengurus' ? 'PENGURUS' : 'KADER';
-
-  // Draf dari sessionStorage (bila ada) untuk memulihkan progres saat refresh.
+  // Draf dari localStorage (bila ada) untuk memulihkan progres saat refresh.
   const [draft] = useState(() => loadDraft());
-  // Token OTP tidak dipersist (sekali pakai) → langkah dipulihkan maksimal
-  // sampai Kontak & OTP agar pengguna memverifikasi ulang.
-  const initStep = draft ? Math.min(draft.step, 2) : 0;
+  // Dipulihkan ke langkah TERAKHIR draf. Token OTP tidak dipersist, jadi saat
+  // Kirim pengguna diminta verifikasi OTP ulang (submit mengembalikan ke
+  // langkah Kontak & OTP bila token hilang).
+  const initStep = draft ? Math.max(0, Math.min(draft.step, STEPS.length - 1)) : 0;
 
   const [step, setStep] = useState(initStep);
-  const [tipe, setTipe] = useState<TipePendaftaran>(draft?.tipe ?? awal);
   const [nama, setNama] = useState(draft?.nama ?? '');
   const [nik, setNik] = useState(draft?.nik ?? '');
   const [tempat, setTempat] = useState(draft?.tempat ?? '');
@@ -160,7 +153,7 @@ export default function DaftarPage() {
   }
 
   function touchStep(s: number): void {
-    const keys: string[] = s === 1 ? STEP1_KEYS : s === 2 ? STEP2_KEYS : s === 3 ? STEP3_KEYS : s === 4 ? STEP4_KEYS : s === 0 ? ['tipe'] : [];
+    const keys: string[] = s === 0 ? STEP1_KEYS : s === 1 ? STEP2_KEYS : s === 2 ? STEP3_KEYS : s === 3 ? STEP4_KEYS : [];
     setTouched((p) => {
       const next: Record<string, boolean> = { ...p };
       for (const k of keys) next[k] = true;
@@ -171,7 +164,7 @@ export default function DaftarPage() {
   function touchAll(): void {
     setSubmitted(true);
     setTouched((p) => {
-      const next: Record<string, boolean> = { ...p, tipe: true };
+      const next: Record<string, boolean> = { ...p };
       for (const k of [...STEP1_KEYS, ...STEP2_KEYS, ...STEP3_KEYS, ...STEP4_KEYS]) next[k] = true;
       return next;
     });
@@ -205,14 +198,14 @@ export default function DaftarPage() {
     };
   }
 
-  const { provinsi, kabupaten, loadingKab, error: wilayahError, pilihProvinsi } = useWilayah();
+  const { provinsi, kabupaten, kecamatan, desaList, kodeposList, loadingKab, loadingKec, loadingDesa, loadingKodepos, error: wilayahError, pilihProvinsi, loadKecamatan, loadDesa, loadKodepos } = useWilayah();
   const otp = useOtp();
 
   // Live validation terpusat: berjalan setiap nilai berubah (atau touched /
   // submitted berubah), memvalidasi langkah AKTIF dengan state terbaru.
   // Tidak loop: deps adalah values, bukan errors hasil setErrors.
   const liveValues = [
-    tipe, nama, nik, tempat, tanggal, jk, agama, pendidikan, pekerjaan, alamat,
+    nama, nik, tempat, tanggal, jk, agama, pendidikan, pekerjaan, alamat,
     prov, kab, kec, desa, kodepos, email, wa, motivasi, step, submitted,
     otp.verifiedToken ?? '', JSON.stringify(Object.keys(docs).map((c) => docs[c as DokumenCategory].key)),
     JSON.stringify(persyaratan),
@@ -220,10 +213,10 @@ export default function DaftarPage() {
   ].join('|');
   useEffect(() => {
     if (!submitted && Object.keys(touched).length === 0) return;
-    if (step === 1) validDataDiri();
-    else if (step === 2) validKontak();
-    else if (step === 3) validDokumen();
-    else if (step === 4) validPersyaratan();
+    if (step === 0) validDataDiri();
+    else if (step === 1) validKontak();
+    else if (step === 2) validDokumen();
+    else if (step === 3) validPersyaratan();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveValues]);
   const [umum, setUmum] = useState<string | null>(null);
@@ -236,6 +229,41 @@ export default function DaftarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Muat saran kecamatan setiap kabupaten terpilih (termasuk pulihan draf).
+  // Kode BPS diambil dari daftar kabupaten yang sudah dimuat; kosong/tak
+  // ketemu = daftar dikosongkan (form fallback ke ketik manual).
+  useEffect(() => {
+    const kode = kab ? (kabupaten.find((k) => String(k.id) === kab)?.kode ?? '') : '';
+    void loadKecamatan(kode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kab, kabupaten]);
+
+  // Muat saran desa setiap kecamatan terpilih. Nilai desa lama dibuang saat
+  // kecamatan berganti (desa milik kecamatan lain = basi).
+  const prevKec = useRef(kec);
+  useEffect(() => {
+    if (prevKec.current !== kec) {
+      prevKec.current = kec;
+      setDesa('');
+    }
+    const kode = kec ? (kecamatan.find((k) => k.nama === kec)?.kode ?? '') : '';
+    void loadDesa(kode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kec, kecamatan]);
+
+  // Muat saran kode pos setiap desa terpilih. Nilai kode pos lama dibuang
+  // saat desa berganti. Nama kabupaten diambil dari daftar yang dimuat.
+  const prevDesa = useRef(desa);
+  useEffect(() => {
+    if (prevDesa.current !== desa) {
+      prevDesa.current = desa;
+      setKodepos('');
+    }
+    const kabNama = kab ? (kabupaten.find((k) => String(k.id) === kab)?.nama ?? '') : '';
+    void loadKodepos(desa, kec, kabNama);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desa, kec, kabupaten]);
+
   // Simpan draf setiap perubahan agar refresh tidak menghilangkan progres.
   useEffect(() => {
     if (hasil) return;
@@ -243,10 +271,10 @@ export default function DaftarPage() {
       (Object.keys(docs) as DokumenCategory[]).map((c) => [c, { key: docs[c].key, name: docs[c].name }]),
     ) as RegDraft['docs'];
     saveDraft({
-      step, tipe, nama, nik, tempat, tanggal, jk, agama, pendidikan, pekerjaan, alamat,
+      step, nama, nik, tempat, tanggal, jk, agama, pendidikan, pekerjaan, alamat,
       prov, kab, kec, desa, kodepos, email, wa, motivasi, persyaratan, docs: draftDocs,
     });
-  }, [step, tipe, nama, nik, tempat, tanggal, jk, agama, pendidikan, pekerjaan, alamat,
+  }, [step, nama, nik, tempat, tanggal, jk, agama, pendidikan, pekerjaan, alamat,
     prov, kab, kec, desa, kodepos, email, wa, motivasi, persyaratan, docs, hasil]);
 
   function validDataDiri(): boolean {
@@ -293,13 +321,13 @@ export default function DaftarPage() {
   function validDokumen(): boolean {
     const e: Record<string, string> = {};
     for (const d of DOKUMEN_LIST) {
-      if (!isDokumenWajib(d.category, tipe)) continue;
+      if (!isDokumenWajib(d.category)) continue;
       const st = docs[d.category];
       // Slot yang masih mengunggah ikut diblokir agar Lanjut tak lolos prematur.
       if (st.uploading) {
         e[d.category] = `${d.label} masih mengunggah, tunggu hingga selesai`;
       } else if (!st.key) {
-        e[d.category] = d.category === 'sk' ? 'Pendaftaran Pengurus wajib melampirkan SK' : `${d.label} wajib diunggah`;
+        e[d.category] = `${d.label} wajib diunggah`;
       }
     }
     setErrors(e);
@@ -324,23 +352,23 @@ export default function DaftarPage() {
     setUmum(null);
     setSubmitted(true);
     touchStep(step);
-    if (step === 1 && !validDataDiri()) {
+    if (step === 0 && !validDataDiri()) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (step === 2 && !validKontak()) {
+    if (step === 1 && !validKontak()) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (step === 3 && !validDokumen()) {
+    if (step === 2 && !validDokumen()) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (step === 4 && !validPersyaratan()) {
+    if (step === 3 && !validPersyaratan()) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    setStep((s) => Math.min(s + 1, 5));
+    setStep((s) => Math.min(s + 1, 4));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -398,31 +426,31 @@ export default function DaftarPage() {
     // dipulihkan dari draf, atau pengguna melompat langkah). Berhenti di
     // langkah gagal pertama agar pesan error tepat terlihat.
     if (!validDataDiri()) {
-      setStep(1);
+      setStep(0);
       setUmum('Data Diri belum lengkap/valid. Periksa kolom yang ditandai merah.');
       scrollTop();
       return;
     }
     if (!validKontak()) {
-      setStep(2);
+      setStep(1);
       setUmum('Kontak & Verifikasi WhatsApp belum lengkap/valid. Periksa kolom yang ditandai merah.');
       scrollTop();
       return;
     }
     if (!validDokumen()) {
-      setStep(3);
+      setStep(2);
       setUmum('Masih ada dokumen wajib yang belum diunggah. Lengkapi berkas yang ditandai merah.');
       scrollTop();
       return;
     }
     if (!validPersyaratan()) {
-      setStep(4);
+      setStep(3);
       setUmum('Centang seluruh persyaratan untuk melanjutkan.');
       scrollTop();
       return;
     }
     if (!otp.verifiedToken) {
-      setStep(2);
+      setStep(1);
       setUmum('Sesi verifikasi WhatsApp hilang. Minta & masukkan ulang kode OTP.');
       scrollTop();
       return;
@@ -431,7 +459,7 @@ export default function DaftarPage() {
     setKirim(true);
     try {
       const res = await submitPendaftaran({
-        tipe_pendaftaran: tipe,
+        tipe_pendaftaran: 'KADER',
         nama_lengkap: nama.trim(),
         nik: nik.trim(),
         tempat_lahir: tempat.trim(),
@@ -454,14 +482,13 @@ export default function DaftarPage() {
         foto_key: docs.foto.key,
         ktp_key: docs.ktp.key,
         cv_key: docs.cv.key,
-        sk_key: docs.sk.key || undefined,
         surat_pernyataan_key: docs.surat_pernyataan.key,
         surat_sehat_key: docs.surat_sehat.key,
       });
       saveRegistration({
         nomor: res.nomor_pendaftaran,
         nama: nama.trim(),
-        tipe,
+        tipe: 'KADER',
         email: email.trim(),
         whatsapp: wa.trim(),
       });
@@ -518,7 +545,7 @@ export default function DaftarPage() {
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <p className="text-center text-xs font-bold uppercase tracking-widest text-kipan-blue">Formulir Pendaftaran</p>
           <h1 className="mt-2 text-center font-serif text-3xl font-bold text-kipan-text-dark sm:text-4xl">
-            Daftar sebagai {tipe === 'PENGURUS' ? 'Pengurus' : 'Kader'}
+            Daftar sebagai Kader
           </h1>
           <div className="mt-8">
             <Stepper steps={STEPS} active={step} />
@@ -557,40 +584,6 @@ export default function DaftarPage() {
 
           <div className="mt-6 rounded-2xl border border-kipan-border bg-white p-6 shadow-sm sm:p-8">
             {step === 0 && (
-              <div>
-                <div className="grid gap-4 sm:grid-cols-2" role="radiogroup" aria-label="Pilih jalur pendaftaran">
-                  {(['KADER', 'PENGURUS'] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      role="radio"
-                      aria-checked={tipe === t}
-                      onClick={() => {
-                        setTipe(t);
-                        // Ganti jalur ke KADER membuang SK yang terlanjur
-                        // diunggah agar tidak ikut terkirim sebagai sisa basi.
-                        if (t === 'KADER') {
-                          setDocs((p) => ({
-                            ...p,
-                            sk: { key: '', name: '', sig: '', uploading: false, error: null },
-                          }));
-                        }
-                      }}
-                      className={`rounded-xl border-2 p-5 text-left transition ${
-                        tipe === t ? 'border-kipan-navy bg-kipan-soft-blue' : 'border-kipan-border hover:border-kipan-blue/50'
-                      }`}
-                    >
-                      <span className="text-base font-bold text-kipan-text-dark">{t === 'KADER' ? 'Kader' : 'Pengurus'}</span>
-                      <span className="mt-1 block text-sm text-kipan-text-muted">
-                        {t === 'KADER' ? 'Tanpa Surat Keputusan (SK).' : 'Wajib melampirkan Surat Keputusan (SK).'}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {step === 1 && (
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <Field label="Nama Lengkap" required error={visibleError('nama')}>
@@ -648,6 +641,9 @@ export default function DaftarPage() {
                     onChange={(v) => {
                       setProv(v);
                       setKab('');
+                      setKec('');
+                      setDesa('');
+                      setKodepos('');
                       void pilihProvinsi(Number(v));
                     }}
                     onBlur={() => markTouched('prov')}
@@ -660,7 +656,12 @@ export default function DaftarPage() {
                 <Field label="Kota / Kabupaten" required error={visibleError('kab')}>
                   <SelectInput
                     value={kab}
-                    onChange={(v) => setKab(v)}
+                    onChange={(v) => {
+                      setKab(v);
+                      setKec('');
+                      setDesa('');
+                      setKodepos('');
+                    }}
                     onBlur={() => markTouched('kab')}
                     id="f-kab"
                     invalid={isInvalid('kab')}
@@ -670,18 +671,72 @@ export default function DaftarPage() {
                   />
                 </Field>
                 <Field label="Kecamatan" required error={visibleError('kec')}>
-                  <TextInput value={kec} {...bindText('kec', setKec)} maxLength={100} id="f-kec" invalid={isInvalid('kec')} />
+                  {(() => {
+                    const opts = kecamatan.map((k) => ({ value: k.nama, label: k.nama }));
+                    const cocok = kec === '' || opts.some((o) => o.value === kec);
+                    if (kecamatan.length > 0 && cocok) {
+                      return (
+                        <SelectInput
+                          value={kec}
+                          onChange={(v) => setKec(v)}
+                          onBlur={() => markTouched('kec')}
+                          id="f-kec"
+                          invalid={isInvalid('kec')}
+                          placeholder={loadingKec ? 'Memuat...' : 'Pilih kecamatan'}
+                          disabled={!kab || loadingKec}
+                          options={opts}
+                        />
+                      );
+                    }
+                    return <TextInput value={kec} {...bindText('kec', setKec)} maxLength={100} id="f-kec" invalid={isInvalid('kec')} />;
+                  })()}
                 </Field>
                 <Field label="Desa / Kelurahan" required error={visibleError('desa')}>
-                  <TextInput value={desa} {...bindText('desa', setDesa)} maxLength={100} id="f-desa" invalid={isInvalid('desa')} />
+                  {(() => {
+                    const opts = desaList.map((d) => ({ value: d.nama, label: d.nama }));
+                    const cocok = desa === '' || opts.some((o) => o.value === desa);
+                    if (desaList.length > 0 && cocok) {
+                      return (
+                        <SelectInput
+                          value={desa}
+                          onChange={(v) => setDesa(v)}
+                          onBlur={() => markTouched('desa')}
+                          id="f-desa"
+                          invalid={isInvalid('desa')}
+                          placeholder={loadingDesa ? 'Memuat...' : 'Pilih desa/kelurahan'}
+                          disabled={!kec || loadingDesa}
+                          options={opts}
+                        />
+                      );
+                    }
+                    return <TextInput value={desa} {...bindText('desa', setDesa)} maxLength={100} id="f-desa" invalid={isInvalid('desa')} />;
+                  })()}
                 </Field>
                 <Field label="Kode Pos" required error={visibleError('kodepos')} hint="5 digit angka">
-                  <TextInput value={kodepos} onChange={(v) => setKodepos(v.replace(/\D/g, '').slice(0, 5))} onBlur={() => markTouched('kodepos')} inputMode="numeric" maxLength={5} id="f-kodepos" invalid={isInvalid('kodepos')} />
+                  {(() => {
+                    const opts = kodeposList.map((k) => ({ value: k.kode_pos, label: k.kode_pos }));
+                    const cocok = kodepos === '' || opts.some((o) => o.value === kodepos);
+                    if (kodeposList.length > 0 && cocok) {
+                      return (
+                        <SelectInput
+                          value={kodepos}
+                          onChange={(v) => setKodepos(v)}
+                          onBlur={() => markTouched('kodepos')}
+                          id="f-kodepos"
+                          invalid={isInvalid('kodepos')}
+                          placeholder={loadingKodepos ? 'Memuat...' : 'Pilih kode pos'}
+                          disabled={!desa || loadingKodepos}
+                          options={opts}
+                        />
+                      );
+                    }
+                    return <TextInput value={kodepos} onChange={(v) => setKodepos(v.replace(/\D/g, '').slice(0, 5))} onBlur={() => markTouched('kodepos')} inputMode="numeric" maxLength={5} id="f-kodepos" invalid={isInvalid('kodepos')} />;
+                  })()}
                 </Field>
               </div>
             )}
 
-            {step === 2 && (
+            {step === 1 && (
               <div className="grid gap-5">
                 <Field label="Email" required error={visibleError('email')} hint="Untuk akun & reset password">
                   <TextInput value={email} {...bindText('email', setEmail)} inputMode="email" maxLength={255} id="f-email" invalid={isInvalid('email')} />
@@ -721,17 +776,14 @@ export default function DaftarPage() {
               </div>
             )}
 
-            {step === 3 && (
+            {step === 2 && (
               <div className="grid gap-5">
-                {tipe === 'KADER' && (
-                  <Alert kind="info">Jalur Kader — Surat Keputusan (SK) tidak wajib dan bisa dilewati.</Alert>
-                )}
-                {DOKUMEN_LIST.filter((d) => d.category !== 'sk' || tipe === 'PENGURUS').map((d) => (
+                {DOKUMEN_LIST.map((d) => (
                   <div key={d.category} className="rounded-xl border border-kipan-border p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-bold text-kipan-text-dark">
-                          {d.label} {isDokumenWajib(d.category, tipe) && <span className="text-kipan-red">*</span>}
+                          {d.label} <span className="text-kipan-red">*</span>
                         </p>
                         <p className="text-xs text-kipan-text-muted">{d.hint}</p>
                       </div>
@@ -762,7 +814,7 @@ export default function DaftarPage() {
               </div>
             )}
 
-            {step === 4 && (
+            {step === 3 && (
               <div>
                 <p className="text-base font-bold text-kipan-text-dark">Persyaratan Keanggotaan</p>
                 <p className="mt-1 text-sm text-kipan-text-muted">Centang seluruh persyaratan di bawah ini untuk melanjutkan.</p>
@@ -796,11 +848,10 @@ export default function DaftarPage() {
               </div>
             )}
 
-            {step === 5 && (
+            {step === 4 && (
               <div>
                 <Alert kind="info">
-                  Periksa kembali data. Dengan menekan Kirim, Anda menyatakan data benar dan dokumen asli. Jalur:{' '}
-                  <strong>{tipe}</strong>.
+                  Periksa kembali data. Dengan menekan Kirim, Anda menyatakan data benar dan dokumen asli.
                 </Alert>
                 <dl className="mt-5 grid gap-x-6 gap-y-3 rounded-xl border border-kipan-border bg-kipan-soft-gray p-5 text-sm sm:grid-cols-2">
                   <div><dt className="text-kipan-text-muted">Nama</dt><dd className="font-semibold">{nama}</dd></div>
@@ -837,7 +888,7 @@ export default function DaftarPage() {
                   </div>
                 )}
               </div>
-              {step < 5 ? (
+              {step < 4 ? (
                 <Button variant="primary" onClick={lanjut}>Lanjut →</Button>
               ) : (
                 <Button variant="accent" disabled={kirim} onClick={() => void submit()}>

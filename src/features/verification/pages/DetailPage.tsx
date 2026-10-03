@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Alert } from '@/components/ui/fields';
 import { Overlay, Spinner } from '@/components/ui/loading';
 import { Card, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
+import { useAuth } from '@/context/AuthContext';
 import { presignView } from '@/features/storage/api/storageService';
 import { ApiError } from '@/services/apiClient';
 import { getDetail, processApproval, revealNik } from '../api/verificationService';
@@ -26,7 +27,7 @@ const ACTION_LABEL: Record<ApprovalAction, string> = {
 
 function actionsFor(status: string): ApprovalAction[] {
   switch (status) {
-    case 'DIAJUKAN':
+    case 'DRAFT':
       return ['verifikasi', 'tolak'];
     case 'PERBAIKAN':
       return ['verifikasi', 'tolak'];
@@ -40,6 +41,7 @@ function actionsFor(status: string): ApprovalAction[] {
 export default function DetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [item, setItem] = useState<PendaftaranDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +113,9 @@ export default function DetailPage() {
   if (loading) return <Loading />;
   if (!item) return <ErrorBox message={error ?? 'Data tidak ditemukan'} />;
 
-  const actions = actionsFor(item.status);
+  // Admin Provinsi hanya MELIHAT (verifikasi = wewenang Kab/Kota + Nasional/Super).
+  const canVerify = user?.role !== 'ADMIN_PROVINSI';
+  const actions = canVerify ? actionsFor(item.status) : [];
 
   return (
     <div>
@@ -160,6 +164,8 @@ export default function DetailPage() {
             <Row label="Pendidikan">{item.pendidikan}</Row>
             <Row label="Pekerjaan">{item.pekerjaan}</Row>
             <Row label="Alamat" className="sm:col-span-2">{item.alamat}, {item.kecamatan}, {item.desa} {item.kode_pos}</Row>
+            {item.provinsi_nama && <Row label="Provinsi">{item.provinsi_nama}</Row>}
+            {item.kabupaten_nama && <Row label="Kabupaten/Kota">{item.kabupaten_nama}</Row>}
             <Row label="Email">{item.email}</Row>
             <Row label="WhatsApp">{item.whatsapp}</Row>
             <Row label="Motivasi" className="sm:col-span-2">{item.motivasi}</Row>
@@ -216,6 +222,13 @@ export default function DetailPage() {
               </button>
             ))}
           </div>
+        </Card>
+      )}
+      {!canVerify && (
+        <Card className="mt-5">
+          <Alert kind="info">
+            Mode lihat saja. Verifikasi pendaftaran adalah wewenang Admin Kabupaten/Kota (dan Nasional/Super).
+          </Alert>
         </Card>
       )}
       {proses !== null && <Overlay label="Memproses verifikasi... mohon tunggu." />}

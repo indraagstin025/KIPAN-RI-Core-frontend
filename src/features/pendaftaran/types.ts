@@ -1,5 +1,3 @@
-export type TipePendaftaran = 'KADER' | 'PENGURUS';
-
 export type { DokumenCategory, PresignUploadResult as PresignResult } from '@/features/storage/types';
 
 export interface WilayahProvinsi {
@@ -15,6 +13,20 @@ export interface WilayahKabupaten {
   nama: string;
 }
 
+export interface WilayahKecamatan {
+  kode: string;
+  nama: string;
+}
+
+export interface WilayahDesa {
+  kode: string;
+  nama: string;
+}
+
+export interface WilayahKodepos {
+  kode_pos: string;
+}
+
 export interface OtpRequestResult {
   expires_in: number;
   resend_in: number;
@@ -27,7 +39,9 @@ export interface OtpVerifyResult {
 }
 
 export interface PendaftaranSubmit {
-  tipe_pendaftaran: TipePendaftaran;
+  // Backend menerima field ini untuk kompatibilitas; pendaftaran kini selalu
+  // Kader (jalur Pengurus diangkat via SK), jadi nilainya konstan.
+  tipe_pendaftaran: 'KADER';
   nama_lengkap: string;
   nik: string;
   tempat_lahir: string;
@@ -50,7 +64,6 @@ export interface PendaftaranSubmit {
   foto_key: string;
   ktp_key: string;
   cv_key: string;
-  sk_key?: string;
   surat_pernyataan_key: string;
   surat_sehat_key: string;
 }

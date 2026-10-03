@@ -1,25 +1,32 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ErrorBox, Loading, PageHeader, Pagination, StatusBadge } from '@/components/ui/stateful';
+import { Alert } from '@/components/ui/fields';
+import { CursorPager, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
+import { useAuth } from '@/context/AuthContext';
 import { ApiError } from '@/services/apiClient';
-import { listQueue } from '../api/verificationService';
+import { listQueue, listQueueCursor } from '../api/verificationService';
 import type { QueueItem } from '../types';
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'Semua status' },
-  { value: 'DIAJUKAN', label: 'Diajukan' },
+const STATUS_DEFS = [
+  { value: '', label: 'Semua' },
+  { value: 'DRAFT', label: 'Draf' },
   { value: 'DIVERIFIKASI', label: 'Diverifikasi' },
-  { value: 'PERBAIKAN', label: 'Perbaikan' },
   { value: 'DISETUJUI', label: 'Disetujui' },
+  { value: 'PERBAIKAN', label: 'Perbaikan' },
   { value: 'DITOLAK', label: 'Ditolak' },
+  { value: 'KEDALUWARSA', label: 'Kedaluwarsa' },
 ];
 
+const ALUR = ['Draf', 'Diverifikasi', 'Disetujui'];
+
 export default function AntreanPage() {
+  const { user } = useAuth();
   const [items, setItems] = useState<QueueItem[]>([]);
   const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [cursor, setCursor] = useState('');
+  const [history, setHistory] = useState<string[]>([]);
+  const [nextCursor, setNextCursor] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,39 +34,65 @@ export default function AntreanPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await listQueue({ page, limit: 10, status: status || undefined });
+      const [res, countRes] = await Promise.all([
+        listQueueCursor({ status: status || undefined, cursor: cursor || undefined, limit: 10 }),
+        Promise.all(
+          STATUS_DEFS.map((d) =>
+            listQueue({ page: 1, limit: 1, status: d.value || undefined }).then((r) => [d.value, r.meta.total] as const),
+          ),
+        ),
+      ]);
       setItems(res.data);
-      setTotalPages(res.meta.total_pages);
-      setTotal(res.meta.total);
+      setNextCursor(res.nextCursor);
+      setCounts(Object.fromEntries(countRes));
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal memuat antrean');
     } finally {
       setLoading(false);
     }
-  }, [page, status]);
+  }, [status, cursor]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  function resetPaging(): void {
+    setCursor('');
+    setHistory([]);
+  }
+
   return (
     <div>
-      <PageHeader title="Antrean Pendaftaran" desc={`${total} pendaftaran sesuai cakupan wilayah Anda.`} />
+      <PageHeader title="Antrean Pendaftaran" desc={`${counts[status] ?? 0} pendaftaran sesuai cakupan wilayah Anda.`} />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <select
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-          className="rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-        <button type="button" onClick={() => void load()} className="rounded-lg border border-kipan-border px-4 py-2.5 text-sm font-semibold text-kipan-navy hover:bg-kipan-soft-blue">
+      {user?.role === 'ADMIN_PROVINSI' && (
+        <div className="mb-4">
+          <Alert kind="info">Mode lihat saja: Admin Provinsi dapat melihat antrean; verifikasi dilakukan Admin Kabupaten/Kota.</Alert>
+        </div>
+      )}
+
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-kipan-border bg-white px-4 py-3 text-xs font-semibold text-kipan-text-muted">
+        {ALUR.map((s, i) => (
+          <span key={s} className="inline-flex items-center gap-2">
+            {i > 0 && <span className="text-kipan-border">→</span>}
+            <span className="rounded-full bg-kipan-soft-blue px-3 py-1 text-kipan-navy">{s}</span>
+          </span>
+        ))}
+        <span className="ml-2 text-kipan-text-muted">Cabang: Perbaikan · Ditolak · Kedaluwarsa</span>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {STATUS_DEFS.map((d) => (
+          <button
+            key={d.value || 'all'}
+            type="button"
+            onClick={() => { setStatus(d.value); resetPaging(); }}
+            className={`rounded-full px-4 py-1.5 text-sm font-semibold ${status === d.value ? 'bg-kipan-navy text-white' : 'bg-kipan-soft-blue text-kipan-navy hover:bg-kipan-soft-gray'}`}
+          >
+            {d.label} <span className="opacity-75">({counts[d.value] ?? 0})</span>
+          </button>
+        ))}
+        <button type="button" onClick={() => void load()} className="rounded-full border border-kipan-border px-4 py-1.5 text-sm font-semibold text-kipan-navy hover:bg-kipan-soft-blue">
           Muat ulang
         </button>
       </div>
@@ -99,7 +132,21 @@ export default function AntreanPage() {
           </table>
         </div>
       )}
-      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+
+      <CursorPager
+        hasPrev={history.length > 0}
+        hasNext={nextCursor !== ''}
+        onPrev={() => {
+          const h = [...history];
+          const prev = h.pop();
+          setHistory(h);
+          setCursor(prev ?? '');
+        }}
+        onNext={() => {
+          setHistory([...history, cursor]);
+          setCursor(nextCursor);
+        }}
+      />
     </div>
   );
 }

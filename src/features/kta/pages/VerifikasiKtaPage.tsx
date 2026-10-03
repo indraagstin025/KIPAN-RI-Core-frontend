@@ -44,7 +44,7 @@ export default function VerifikasiKtaPage() {
             <input
               value={nia}
               onChange={(e) => setNia(e.target.value.toUpperCase())}
-              placeholder="KIPAN-32-3273-2026-00001"
+              placeholder="KIPAN-IND-3204-2026-000001"
               className="mt-2 w-full rounded-lg border border-kipan-border px-3.5 py-2.5 text-sm uppercase focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
             />
             <label className="mt-4 block text-sm font-semibold text-kipan-text-dark">Signature QR</label>
