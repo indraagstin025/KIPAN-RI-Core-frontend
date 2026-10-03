@@ -294,7 +294,7 @@ export default function PengurusListPage() {
                           <SelectInput
                             value={newJabatanId}
                             onChange={setNewJabatanId}
-                            options={jabatanAll.filter((j) => j.level === p.level).map((j) => ({ value: String(j.id), label: `${j.nama}${j.is_inti ? ' (inti)' : ''}` }))}
+                            options={jabatanAll.map((j) => ({ value: String(j.id), label: `${j.nama}${j.is_inti ? ' (inti)' : ''}` }))}
                             placeholder="Pilih jabatan baru"
                             id={`pjab-${p.id}`}
                           />

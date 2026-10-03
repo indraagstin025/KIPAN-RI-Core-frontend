@@ -28,6 +28,12 @@ export function canFinalizeSK(role?: Role | null): boolean {
   return role === 'ADMIN_NASIONAL' || role === 'SUPER_ADMIN';
 }
 
+// TDD D14: semua admin boleh menambah jabatan (kab/prov butuh jabatan sendiri).
+export function canCreateJabatan(role?: Role | null): boolean {
+  return role === 'ADMIN_NASIONAL' || role === 'ADMIN_PROVINSI' || role === 'ADMIN_KABUPATEN' || role === 'SUPER_ADMIN';
+}
+
+// Ubah/nonaktifkan jabatan: Super/Nasional.
 export function canManageJabatan(role?: Role | null): boolean {
   return role === 'ADMIN_NASIONAL' || role === 'SUPER_ADMIN';
 }

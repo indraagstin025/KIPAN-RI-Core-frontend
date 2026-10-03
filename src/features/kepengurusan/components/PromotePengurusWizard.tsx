@@ -93,13 +93,13 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
       .finally(() => setLoadingAnggota(false));
   }, [open, needAnggotaStep, debouncedCari]);
 
-  // Saat SK dipilih: muat jabatan sesuai level + tandai jabatan inti terisi.
+  // Saat SK dipilih: muat master jabatan (tanpa level) + tandai jabatan inti terisi.
   useEffect(() => {
     if (!open || !sk) return;
     setLoadingJabatan(true);
     setJabatanId('');
     setTanggalMulai(sk.tanggal_terbit ? sk.tanggal_terbit.slice(0, 10) : '');
-    Promise.all([adminListJabatan(false, sk.level), adminGetSK(sk.id)])
+    Promise.all([adminListJabatan(false), adminGetSK(sk.id)])
       .then(([js, detail]) => {
         setJabatanList(js.filter((j) => j.is_active));
         setTakenInti(new Set(detail.pengurus.filter((p) => p.is_inti).map((p) => p.jabatan_id)));
@@ -248,7 +248,7 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
               {loadingJabatan ? (
                 <div className="flex items-center gap-2 py-6 text-sm text-kipan-text-muted"><Spinner size={16} /> Memuat jabatan...</div>
               ) : jabatanList.length === 0 ? (
-                <Alert kind="info">Belum ada master jabatan untuk level ini. Hubungi Super/Nasional Admin untuk menambah jabatan.</Alert>
+                <Alert kind="info">Belum ada master jabatan. Tambahkan dulu di menu Master Jabatan (semua admin boleh menambah).</Alert>
               ) : (
                 <div className="grid gap-2">
                   {jabatanList.map((j) => {

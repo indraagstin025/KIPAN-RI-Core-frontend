@@ -70,7 +70,7 @@ export default function App() {
           <Route path="/admin/pengurus" element={<AdminOnly><PengurusListPage /></AdminOnly>} />
           <Route
             path="/admin/jabatan"
-            element={<AdminOnly><RequireRole roles={['SUPER_ADMIN', 'ADMIN_NASIONAL']}><JabatanPage /></RequireRole></AdminOnly>}
+            element={<AdminOnly><JabatanPage /></AdminOnly>}
           />
           <Route
             path="/admin/wilayah"

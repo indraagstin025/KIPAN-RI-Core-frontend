@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import NotificationBell from '@/features/notification/components/NotificationBell';
 import { isAdminRole } from '@/features/auth/types';
-import { canManageJabatan } from '@/features/kepengurusan/roles';
+import { canCreateJabatan } from '@/features/kepengurusan/roles';
 
 interface NavItem {
   to: string;
@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
 
   const admin = isAdminRole(user?.role);
-  const jabatanNav: NavItem[] = canManageJabatan(user?.role) ? [{ to: '/admin/jabatan', label: 'Master Jabatan' }] : [];
+  const jabatanNav: NavItem[] = canCreateJabatan(user?.role) ? [{ to: '/admin/jabatan', label: 'Master Jabatan' }] : [];
   const isNasionalOrSuper = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL';
   const wilayahNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/wilayah', label: 'Wilayah' }] : [];
   const usersNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/users', label: 'Manajemen Pengguna' }] : [];

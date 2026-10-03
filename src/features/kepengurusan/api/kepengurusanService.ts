@@ -20,10 +20,9 @@ import type {
 // JABATAN (MASTER)
 // ============================================================
 
-export function adminListJabatan(includeInactive = false, level = ''): Promise<Jabatan[]> {
+export function adminListJabatan(includeInactive = false): Promise<Jabatan[]> {
   const p = new URLSearchParams();
   p.set('include_inactive', String(includeInactive));
-  if (level) p.set('level', level);
   return apiFetch<Jabatan[]>(`/admin/jabatan?${p.toString()}`);
 }
 

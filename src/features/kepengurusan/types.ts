@@ -19,7 +19,7 @@ export type PengurusStatus =
 export interface Jabatan {
   id: number;
   nama: string;
-  level: string;
+  is_ketua_umum: boolean;
   is_inti: boolean;
   is_active: boolean;
   urutan: number;
@@ -29,7 +29,7 @@ export interface Jabatan {
 
 export interface JabatanInput {
   nama: string;
-  level: string;
+  is_ketua_umum: boolean;
   is_inti: boolean;
   is_active: boolean;
   urutan: number;

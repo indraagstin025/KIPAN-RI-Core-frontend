@@ -120,16 +120,11 @@ export default function SkListPage() {
     void load();
   }, [load]);
 
-  // Muat jabatan sesuai level efektif saat form dibuka / level berubah.
+  // Muat master jabatan (tanpa level — tingkat mengikuti SK).
   useEffect(() => {
     if (!showForm) return;
-    const lvl = isNational ? fLevel : (user?.role === 'ADMIN_PROVINSI' ? 'PROVINSI' : 'KABUPATEN');
-    if (!lvl) {
-      setJabatanList([]);
-      return;
-    }
-    adminListJabatan(false, lvl).then(setJabatanList).catch(() => setJabatanList([]));
-  }, [showForm, fLevel, isNational, user?.role]);
+    adminListJabatan(false).then(setJabatanList).catch(() => setJabatanList([]));
+  }, [showForm]);
 
   // Cari kader: mode "Dari Anggota (Baru)" atau "Promosi Pengurus".
   useEffect(() => {
