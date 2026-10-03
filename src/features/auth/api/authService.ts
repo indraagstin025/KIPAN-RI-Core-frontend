@@ -30,3 +30,10 @@ export function resetPassword(token: string, newPassword: string): Promise<null>
     data: { token, new_password: newPassword },
   });
 }
+
+export function setPassword(token: string, newPassword: string): Promise<null> {
+  return apiFetch<null>('/auth/set-password', {
+    method: 'POST',
+    data: { token, new_password: newPassword },
+  });
+}

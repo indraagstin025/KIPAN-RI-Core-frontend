@@ -27,6 +27,7 @@ import DashboardPage from './features/dashboard/pages/DashboardPage';
 import DetailPage from './features/verification/pages/DetailPage';
 import WilayahPage from './features/wilayah/pages/WilayahPage';
 import UserManagementPage from './features/users/pages/UserManagementPage';
+import OutboxListPage from './features/outbox/pages/OutboxListPage';
 import LandingPage from './pages/public/LandingPage';
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/lupa-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/set-password" element={<ResetPasswordPage mode="set" />} />
 
           {/* Admin */}
           <Route path="/admin" element={<AdminOnly><DashboardPage /></AdminOnly>} />
@@ -78,6 +80,7 @@ export default function App() {
             path="/admin/users"
             element={<AdminOnly><RequireRole roles={['SUPER_ADMIN']}><UserManagementPage /></RequireRole></AdminOnly>}
           />
+          <Route path="/admin/email-outbox" element={<AdminOnly><OutboxListPage /></AdminOnly>} />
 
           {/* Akun (semua role terotentikasi) */}
           <Route

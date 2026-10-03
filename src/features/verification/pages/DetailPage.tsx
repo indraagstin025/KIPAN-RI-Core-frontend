@@ -48,7 +48,7 @@ export default function DetailPage() {
   const [catatan, setCatatan] = useState('');
   const [proses, setProses] = useState<ApprovalAction | null>(null);
   const [nik, setNik] = useState<string | null>(null);
-  const [hasil, setHasil] = useState<{ nia?: string; otp?: string } | null>(null);
+  const [hasil, setHasil] = useState<{ nia?: string } | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -98,7 +98,7 @@ export default function DetailPage() {
     try {
       const res = await processApproval(item.id, action, catatan.trim());
       if (action === 'setujui') {
-        setHasil({ nia: res.nia, otp: res.one_time_password });
+        setHasil({ nia: res.nia });
         setItem((p) => (p ? { ...p, status: 'DISETUJUI' } : p));
       } else {
         navigate('/admin/pendaftaran');
@@ -135,12 +135,7 @@ export default function DetailPage() {
         <div className="mb-4">
           <Alert kind="success">
             <p className="font-bold">Pendaftaran disetujui. NIA: {hasil.nia}</p>
-            {hasil.otp && (
-              <p className="mt-2">
-                Password awal akun anggota (tampilkan SEKALI, sampaikan ke anggota via kanal resmi):
-                <span className="ml-2 rounded bg-kipan-navy px-3 py-1 font-mono font-bold text-white">{hasil.otp}</span>
-              </p>
-            )}
+            <p className="mt-2 text-sm">Tautan <b>buat kata sandi</b> telah dikirim ke email anggota melalui antrian (outbox).</p>
           </Alert>
         </div>
       )}

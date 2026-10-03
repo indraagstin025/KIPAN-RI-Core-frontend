@@ -5,11 +5,12 @@ import { Spinner } from '@/components/ui/loading';
 import { Alert, Field } from '@/components/ui/fields';
 import { ErrorBox } from '@/components/ui/stateful';
 import { ApiError } from '@/services/apiClient';
-import { resetPassword } from '../api/authService';
+import { resetPassword, setPassword as setAccountPassword } from '../api/authService';
 
 const inputCls = 'w-full rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20';
 
-export default function ResetPasswordPage() {
+export default function ResetPasswordPage({ mode = 'reset' }: { mode?: 'reset' | 'set' }) {
+  const isSet = mode === 'set';
   const [params] = useSearchParams();
   const [token, setToken] = useState(params.get('token') ?? '');
   const [password, setPassword] = useState('');
@@ -27,7 +28,11 @@ export default function ResetPasswordPage() {
     }
     setLoading(true);
     try {
-      await resetPassword(token.trim(), password);
+      if (isSet) {
+        await setAccountPassword(token.trim(), password);
+      } else {
+        await resetPassword(token.trim(), password);
+      }
       setDone(true);
     } catch (err: unknown) {
       setError(err instanceof ApiError ? err.message : 'Gagal mengatur ulang kata sandi');
@@ -42,11 +47,11 @@ export default function ResetPasswordPage() {
         <Link to="/" className="flex items-center justify-center gap-3">
           <img src="/logo-kipan.jpg" alt="Logo KIPAN" className="h-12 w-12 rounded-full border border-kipan-border object-cover" />
         </Link>
-        <h1 className="mt-4 text-center font-serif text-2xl font-bold text-kipan-text-dark">Atur Kata Sandi Baru</h1>
+        <h1 className="mt-4 text-center font-serif text-2xl font-bold text-kipan-text-dark">{isSet ? 'Buat Kata Sandi Akun' : 'Atur Kata Sandi Baru'}</h1>
 
         {done ? (
           <div className="mt-6">
-            <Alert kind="success">Kata sandi berhasil diatur ulang. Silakan login dengan kata sandi baru.</Alert>
+            <Alert kind="success">{isSet ? 'Kata sandi berhasil dibuat. Silakan login.' : 'Kata sandi berhasil diatur ulang. Silakan login dengan kata sandi baru.'}</Alert>
             <p className="mt-4 text-center">
               <Link to="/login" className="font-semibold text-kipan-blue hover:underline">Ke halaman login →</Link>
             </p>
@@ -54,7 +59,7 @@ export default function ResetPasswordPage() {
         ) : (
           <form onSubmit={(e) => void submit(e)} className="mt-6 grid gap-5">
             {error && <ErrorBox message={error} />}
-            <Field label="Token Reset" required hint="Dari tautan email (otomatis terisi bila membuka tautan).">
+            <Field label={isSet ? 'Token' : 'Token Reset'} required hint="Dari tautan email (otomatis terisi bila membuka tautan).">
               <input value={token} onChange={(e) => setToken(e.target.value)} className={inputCls} />
             </Field>
             <Field label="Kata Sandi Baru" required hint="Min 8 karakter: huruf besar/kecil, angka, simbol.">

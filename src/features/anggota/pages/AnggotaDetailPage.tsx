@@ -26,7 +26,7 @@ export default function AnggotaDetailPage() {
   const [item, setItem] = useState<AnggotaDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [otp, setOtp] = useState<string | null>(null);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
   const [unduh, setUnduh] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
@@ -72,13 +72,13 @@ export default function AnggotaDetailPage() {
 
   async function resetPassword(): Promise<void> {
     if (!item) return;
-    if (!window.confirm('Reset password akun anggota ini? Seluruh sesi anggota akan dihentikan dan password baru hanya tampil sekali.')) return;
+    if (!window.confirm('Reset password akun anggota ini? Tautan buat kata sandi akan dikirim ke email anggota dan seluruh sesi lama dihentikan.')) return;
     setResetting(true);
     setError(null);
-    setOtp(null);
+    setResetMsg(null);
     try {
-      const res = await resetMemberPassword(item.id);
-      setOtp(res.one_time_password);
+      await resetMemberPassword(item.id);
+      setResetMsg('Tautan buat kata sandi telah dikirim ke email anggota melalui antrian (outbox).');
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal mereset password anggota');
     } finally {
@@ -108,13 +108,10 @@ export default function AnggotaDetailPage() {
       </div>
       {error && <div className="mb-4"><ErrorBox message={error} /></div>}
 
-      {otp && (
+      {resetMsg && (
         <div className="mb-4 rounded-lg border border-kipan-green/40 bg-emerald-50 p-4 text-sm">
-          <p className="font-bold text-kipan-green">Password baru diterbitkan — tampil SEKALI.</p>
-          <p className="mt-1 text-kipan-text-dark">
-            Sampaikan ke anggota via kanal resmi, lalu tutup halaman ini:
-          </p>
-          <p className="mt-2 w-fit rounded bg-kipan-navy px-4 py-2 font-mono text-base font-bold tracking-wider text-white">{otp}</p>
+          <p className="font-bold text-kipan-green">Berhasil</p>
+          <p className="mt-1 text-kipan-text-dark">{resetMsg}</p>
           <p className="mt-2 text-xs text-kipan-text-muted">Seluruh sesi lama anggota sudah dicabut. Aksi ini tercatat di audit.</p>
         </div>
       )}

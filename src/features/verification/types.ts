@@ -50,7 +50,6 @@ export type ApprovalAction = 'verifikasi' | 'perbaikan' | 'tolak' | 'setujui';
 
 export interface ApprovalResult {
   nia?: string;
-  one_time_password?: string;
 }
 
 export interface MeScope {

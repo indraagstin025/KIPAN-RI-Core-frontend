@@ -47,7 +47,8 @@ export function adminKtaUrl(id: number): Promise<{ download_url: string }> {
   return apiFetch<{ download_url: string }>(`/admin/anggota/${id}/kta`);
 }
 
-// resetMemberPassword (T1): password baru tampil SEKALI; sesi anggota dicabut.
-export function resetMemberPassword(id: number): Promise<{ one_time_password: string }> {
-  return apiFetch<{ one_time_password: string }>(`/admin/anggota/${id}/reset-password`, { method: 'POST' });
+// resetMemberPassword (T1): menerbitkan tautan set-password (dikirim ke email
+// anggota via antrian). Tidak ada password di respons admin.
+export function resetMemberPassword(id: number): Promise<void> {
+  return apiFetch<void>(`/admin/anggota/${id}/reset-password`, { method: 'POST' });
 }
