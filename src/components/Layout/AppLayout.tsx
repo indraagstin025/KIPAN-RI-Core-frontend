@@ -17,6 +17,7 @@ const ADMIN_NAV: NavItem[] = [
   { to: '/admin/anggota', label: 'Data Anggota' },
   { to: '/admin/sk', label: 'Surat Keputusan' },
   { to: '/admin/pengurus', label: 'Pengurus' },
+  { to: '/admin/laporan', label: 'Laporan' },
 ];
 
 const USER_NAV: NavItem[] = [{ to: '/akun/kta', label: 'KTA Saya' }];
