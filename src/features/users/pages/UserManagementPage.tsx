@@ -5,6 +5,7 @@ import { Overlay, Spinner } from '@/components/ui/loading';
 import { Card, ErrorBox, Loading, PageHeader, Pagination, StatusBadge } from '@/components/ui/stateful';
 import { listKabupaten, listProvinsi } from '@/features/pendaftaran/api/wilayahService';
 import type { WilayahKabupaten, WilayahProvinsi } from '@/features/pendaftaran/types';
+import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebounced';
 import { ApiError } from '@/services/apiClient';
 import { adminCreateUser, adminDeleteUser, adminListUsers, adminUpdateUser, adminUserCounts } from '../api/userAdminService';
@@ -54,6 +55,12 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 }
 
 export default function UserManagementPage() {
+  const { user } = useAuth();
+  const isNasional = user?.role === 'ADMIN_NASIONAL';
+  const roleOptions = isNasional
+    ? ROLE_OPTIONS.filter((o) => o.value === 'ADMIN_PROVINSI' || o.value === 'ADMIN_KABUPATEN')
+    : ROLE_OPTIONS;
+
   const [counts, setCounts] = useState<AdminUserCounts>(EMPTY_COUNTS);
   const [items, setItems] = useState<AdminUser[]>([]);
   const [role, setRole] = useState('');
@@ -189,13 +196,17 @@ export default function UserManagementPage() {
     return u.kabupaten_nama ?? '-';
   }
 
-  const tabs = [
+  const allTabs = [
     { value: '', label: 'Semua', count: counts.total },
     { value: 'SUPER_ADMIN', label: 'Super', count: counts.super },
     { value: 'ADMIN_NASIONAL', label: 'Nasional', count: counts.nasional },
     { value: 'ADMIN_PROVINSI', label: 'Provinsi', count: counts.provinsi },
     { value: 'ADMIN_KABUPATEN', label: 'Kabupaten/Kota', count: counts.kabupaten },
   ];
+  // Admin Nasional tidak melihat tab Super/Nasional (backend menolak).
+  const tabs = isNasional
+    ? allTabs.filter((t) => t.value === '' || t.value === 'ADMIN_PROVINSI' || t.value === 'ADMIN_KABUPATEN')
+    : allTabs;
 
   return (
     <div>
@@ -276,10 +287,14 @@ export default function UserManagementPage() {
                   <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
                   <td className="px-4 py-3 text-xs text-kipan-text-muted">{new Date(u.created_at).toLocaleDateString('id-ID')}</td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-3">
-                      <button type="button" onClick={() => openForm(u)} className="font-semibold text-kipan-blue hover:underline">Ubah</button>
-                      <button type="button" onClick={() => void hapus(u)} className="font-semibold text-kipan-red hover:underline">Hapus</button>
-                    </div>
+                    {isNasional && u.role !== 'ADMIN_PROVINSI' && u.role !== 'ADMIN_KABUPATEN' ? (
+                      <span className="text-xs text-kipan-text-muted">—</span>
+                    ) : (
+                      <div className="flex justify-end gap-3">
+                        <button type="button" onClick={() => openForm(u)} className="font-semibold text-kipan-blue hover:underline">Ubah</button>
+                        <button type="button" onClick={() => void hapus(u)} className="font-semibold text-kipan-red hover:underline">Hapus</button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -300,7 +315,7 @@ export default function UserManagementPage() {
               <TextInput value={form.email} onChange={(v) => setForm((f) => ({ ...f, email: v }))} inputMode="email" maxLength={255} id="uf-email" />
             </Field>
             <Field label="Role" required>
-              <SelectInput value={form.role} onChange={(v) => setForm((f) => ({ ...f, role: v, provinsi: '', kabupaten: '' }))} placeholder="Pilih role" id="uf-role" options={ROLE_OPTIONS} />
+              <SelectInput value={form.role} onChange={(v) => setForm((f) => ({ ...f, role: v, provinsi: '', kabupaten: '' }))} placeholder="Pilih role" id="uf-role" options={roleOptions} />
             </Field>
             <Field label="Status" required>
               <SelectInput value={form.status} onChange={(v) => setForm((f) => ({ ...f, status: v }))} placeholder="Status" id="uf-status" options={[{ value: 'Aktif', label: 'Aktif' }, { value: 'Nonaktif', label: 'Nonaktif' }]} />

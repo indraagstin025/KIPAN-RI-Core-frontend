@@ -82,7 +82,7 @@ export default function App() {
           />
           <Route
             path="/admin/users"
-            element={<AdminOnly><RequireRole roles={['SUPER_ADMIN']}><UserManagementPage /></RequireRole></AdminOnly>}
+            element={<AdminOnly><RequireRole roles={['SUPER_ADMIN', 'ADMIN_NASIONAL']}><UserManagementPage /></RequireRole></AdminOnly>}
           />
           <Route path="/admin/email-outbox" element={<AdminOnly><OutboxListPage /></AdminOnly>} />
 
