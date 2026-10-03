@@ -10,13 +10,16 @@ import { ApiError } from '@/services/apiClient';
 import {
   adminListJabatan,
   adminListPengurus,
+  adminListSK,
+  adminMutasi,
+  adminPaws,
   adminPengurusStats,
   adminUpdatePengurusJabatan,
   adminUpdatePengurusStatus,
 } from '../api/kepengurusanService';
 import PromotePengurusWizard from '../components/PromotePengurusWizard';
 import { canManagePengurusForLevel } from '../roles';
-import type { Jabatan, PengurusDetail, PengurusStats, PengurusStatus } from '../types';
+import type { Jabatan, PengurusDetail, PengurusPAWAksi, PengurusStats, PengurusStatus, SKListItem } from '../types';
 
 const STATUS_OPTIONS: PengurusStatus[] = ['Aktif', 'Demisioner', 'Diberhentikan', 'Mengundurkan Diri', 'Meninggal'];
 const MASA_OPTIONS = [
@@ -24,6 +27,13 @@ const MASA_OPTIONS = [
   { value: 'Aktif', label: 'Aktif' },
   { value: 'AkanBerakhir', label: 'Akan berakhir (≤90 hari)' },
   { value: 'Berakhir', label: 'Berakhir' },
+];
+
+const PAW_OPTIONS: { value: PengurusPAWAksi; label: string }[] = [
+  { value: 'DEMISIONER', label: 'Demisioner (purna tugas awal)' },
+  { value: 'DIBERHENTIKAN', label: 'Diberhentikan (sanksi)' },
+  { value: 'MENGUNDURKAN_DIRI', label: 'Mengundurkan diri' },
+  { value: 'MENINGGAL', label: 'Meninggal dunia' },
 ];
 
 const EMPTY_STATS: PengurusStats = { total: 0, nasional: 0, provinsi: 0, kabupaten: 0, akan_berakhir: 0 };
@@ -75,6 +85,17 @@ export default function PengurusListPage() {
   const [editingJabatan, setEditingJabatan] = useState<number | null>(null);
   const [newJabatanId, setNewJabatanId] = useState('');
 
+  // PAW & Mutasi (A3).
+  const [pawId, setPawId] = useState<number | null>(null);
+  const [pawAksi, setPawAksi] = useState<PengurusPAWAksi>('DEMISIONER');
+  const [pawKeterangan, setPawKeterangan] = useState('');
+  const [mutasiId, setMutasiId] = useState<number | null>(null);
+  const [mutasiSKId, setMutasiSKId] = useState('');
+  const [mutasiJabatanId, setMutasiJabatanId] = useState('');
+  const [mutasiTanggal, setMutasiTanggal] = useState('');
+  const [mutasiKeterangan, setMutasiKeterangan] = useState('');
+  const [skTargets, setSkTargets] = useState<SKListItem[]>([]);
+
   // Wizard pengangkatan terpadu (SK → Anggota → Jabatan → Konfirmasi).
   const [showWizard, setShowWizard] = useState(false);
 
@@ -84,6 +105,18 @@ export default function PengurusListPage() {
         setJabatanAll(await adminListJabatan(false));
       } catch {
         // abaikan; dropdown tetap tampil bila list tersedia
+      }
+    })();
+  }, []);
+
+  // SK tujuan mutasi: aktif & belum final (wewenang ditegakkan backend).
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await adminListSK({ page: 1, limit: 100 });
+        setSkTargets(res.data.filter((s) => s.status === 'Aktif' && s.approval_status !== 'DISETUJUI'));
+      } catch {
+        // abaikan
       }
     })();
   }, []);
@@ -166,6 +199,61 @@ export default function PengurusListPage() {
       await load();
     } catch (e: unknown) {
       setAksiError(e instanceof ApiError ? e.message : 'Gagal memperbarui status pengurus');
+    }
+  }
+
+  function mulaiPaw(p: PengurusDetail): void {
+    setPawId(p.id);
+    setPawAksi('DEMISIONER');
+    setPawKeterangan('');
+    setAksiError(null);
+  }
+
+  async function simpanPaw(id: number): Promise<void> {
+    setAksiError(null);
+    if (!pawKeterangan.trim()) {
+      setAksiError('Keterangan wajib diisi untuk aksi PAW.');
+      return;
+    }
+    try {
+      await adminPaws(id, pawAksi, pawKeterangan.trim());
+      setPawId(null);
+      await load();
+    } catch (e: unknown) {
+      setAksiError(e instanceof ApiError ? e.message : 'Gagal memproses PAW');
+    }
+  }
+
+  function mulaiMutasi(p: PengurusDetail): void {
+    setMutasiId(p.id);
+    setMutasiSKId('');
+    setMutasiJabatanId(String(p.jabatan_id));
+    setMutasiTanggal('');
+    setMutasiKeterangan('');
+    setAksiError(null);
+  }
+
+  async function simpanMutasi(id: number): Promise<void> {
+    setAksiError(null);
+    if (!mutasiSKId) {
+      setAksiError('Pilih SK tujuan mutasi.');
+      return;
+    }
+    if (!mutasiJabatanId) {
+      setAksiError('Pilih jabatan tujuan.');
+      return;
+    }
+    try {
+      await adminMutasi(id, {
+        sk_id: Number(mutasiSKId),
+        jabatan_id: Number(mutasiJabatanId),
+        tanggal_mulai: mutasiTanggal || undefined,
+        keterangan: mutasiKeterangan.trim() || undefined,
+      });
+      setMutasiId(null);
+      await load();
+    } catch (e: unknown) {
+      setAksiError(e instanceof ApiError ? e.message : 'Gagal memutasi pengurus');
     }
   }
 
@@ -314,10 +402,61 @@ export default function PengurusListPage() {
                     <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
                     <td className={`px-4 py-3 text-xs font-semibold ${mj.cls}`}>{mj.text}</td>
                     <td className="px-4 py-3 text-right">
-                      {canManagePengurusForLevel(user?.role, p.level) && editing !== p.id && editingJabatan !== p.id && (
+                      {canManagePengurusForLevel(user?.role, p.level) &&
+                        editing !== p.id && editingJabatan !== p.id && pawId !== p.id && mutasiId !== p.id && (
                         <div className="flex flex-col items-end gap-1">
                           <button type="button" onClick={() => mulaiUbah(p)} className="font-semibold text-kipan-blue hover:underline">Ubah Status</button>
                           <button type="button" onClick={() => mulaiGantiJabatan(p)} className="font-semibold text-kipan-blue hover:underline">Ganti Jabatan</button>
+                          {p.status === 'Aktif' && (
+                            <>
+                              <button type="button" onClick={() => mulaiPaw(p)} className="font-semibold text-kipan-red hover:underline">PAW</button>
+                              <button type="button" onClick={() => mulaiMutasi(p)} className="font-semibold text-kipan-blue hover:underline">Mutasi</button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      {pawId === p.id && (
+                        <div className="mt-2 space-y-2 text-left">
+                          <p className="text-xs font-bold text-kipan-text-dark">Aksi PAW</p>
+                          <SelectInput
+                            value={pawAksi}
+                            onChange={(v) => setPawAksi(v as PengurusPAWAksi)}
+                            options={PAW_OPTIONS}
+                            placeholder="Pilih aksi"
+                            id={`paw-${p.id}`}
+                          />
+                          <TextInput value={pawKeterangan} onChange={setPawKeterangan} placeholder="Keterangan (wajib)" id={`pawk-${p.id}`} />
+                          <div className="flex gap-2">
+                            <Button variant="primary" onClick={() => void simpanPaw(p.id)}>Proses PAW</Button>
+                            <Button variant="ghost" onClick={() => setPawId(null)}>Batal</Button>
+                          </div>
+                        </div>
+                      )}
+                      {mutasiId === p.id && (
+                        <div className="mt-2 space-y-2 text-left">
+                          <p className="text-xs font-bold text-kipan-text-dark">Mutasi ke SK Lain</p>
+                          <SelectInput
+                            value={mutasiSKId}
+                            onChange={setMutasiSKId}
+                            options={skTargets
+                              .filter((s) => s.id !== p.surat_keputusan_id)
+                              .map((s) => ({ value: String(s.id), label: `${s.nomor_sk} · ${s.judul}` }))}
+                            placeholder="Pilih SK tujuan"
+                            id={`mut-${p.id}`}
+                          />
+                          <SelectInput
+                            value={mutasiJabatanId}
+                            onChange={setMutasiJabatanId}
+                            options={jabatanAll.map((j) => ({ value: String(j.id), label: `${j.nama}${j.is_inti ? ' (inti)' : ''}` }))}
+                            placeholder="Pilih jabatan tujuan"
+                            id={`mutj-${p.id}`}
+                          />
+                          <TextInput value={mutasiTanggal} onChange={setMutasiTanggal} placeholder="Tanggal mulai (YYYY-MM-DD, opsional)" id={`mutt-${p.id}`} />
+                          <TextInput value={mutasiKeterangan} onChange={setMutasiKeterangan} placeholder="Keterangan (opsional)" id={`mutk-${p.id}`} />
+                          <div className="flex gap-2">
+                            <Button variant="primary" onClick={() => void simpanMutasi(p.id)}>Proses Mutasi</Button>
+                            <Button variant="ghost" onClick={() => setMutasiId(null)}>Batal</Button>
+                          </div>
                         </div>
                       )}
                     </td>

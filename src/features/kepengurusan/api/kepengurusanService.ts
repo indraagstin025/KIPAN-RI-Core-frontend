@@ -2,7 +2,9 @@ import { apiFetch, apiFetchPaginated, type Paginated } from '@/services/apiClien
 import type {
   Jabatan,
   JabatanInput,
+  MutasiInput,
   PengurusDetail,
+  PengurusPAWAksi,
   PengurusQuery,
   PengurusStats,
   PengurusStatus,
@@ -113,4 +115,14 @@ export function adminUpdatePengurusStatus(id: number, status: PengurusStatus, ke
 
 export function adminUpdatePengurusJabatan(id: number, jabatanId: number): Promise<PengurusDetail> {
   return apiFetch<PengurusDetail>(`/admin/pengurus/${id}/jabatan`, { method: 'PATCH', data: { jabatan_id: jabatanId } });
+}
+
+// adminPaws menjalankan aksi pengakhiran masa bakti individual (PAW).
+export function adminPaws(id: number, aksi: PengurusPAWAksi, keterangan: string): Promise<void> {
+  return apiFetch<void>(`/admin/pengurus/${id}/paw`, { method: 'PUT', data: { aksi, keterangan } });
+}
+
+// adminMutasi memindahkan pengurus ke SK/jabatan tujuan (tutup lama, buka baru).
+export function adminMutasi(id: number, input: MutasiInput): Promise<PengurusDetail> {
+  return apiFetch<PengurusDetail>(`/admin/pengurus/${id}/mutasi`, { method: 'PUT', data: input });
 }

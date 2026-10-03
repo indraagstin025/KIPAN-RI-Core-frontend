@@ -95,6 +95,15 @@ export interface PengurusDetail {
   created_at: string;
 }
 
+export type PengurusPAWAksi = 'DEMISIONER' | 'DIBERHENTIKAN' | 'MENGUNDURKAN_DIRI' | 'MENINGGAL';
+
+export interface MutasiInput {
+  sk_id: number;
+  jabatan_id: number;
+  tanggal_mulai?: string;
+  keterangan?: string;
+}
+
 export interface PengurusStats {
   total: number;
   nasional: number;
