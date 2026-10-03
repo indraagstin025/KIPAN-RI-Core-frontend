@@ -11,7 +11,6 @@ const STATUS_DEFS = [
   { value: '', label: 'Semua' },
   { value: 'DRAFT', label: 'Draf' },
   { value: 'DIVERIFIKASI', label: 'Diverifikasi' },
-  { value: 'DISETUJUI', label: 'Disetujui' },
   { value: 'PERBAIKAN', label: 'Perbaikan' },
   { value: 'DITOLAK', label: 'Ditolak' },
   { value: 'KEDALUWARSA', label: 'Kedaluwarsa' },
