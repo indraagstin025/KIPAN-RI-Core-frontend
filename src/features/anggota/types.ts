@@ -57,6 +57,29 @@ export interface AnggotaDetail {
   riwayat?: string;
 }
 
+export interface AnggotaCreateInput {
+  nama_lengkap: string;
+  nik: string;
+  tempat_lahir: string;
+  tanggal_lahir: string;
+  jenis_kelamin: string;
+  agama: string;
+  pendidikan: string;
+  pekerjaan: string;
+  alamat: string;
+  provinsi_id: number;
+  kabupaten_id: number;
+  kecamatan: string;
+  desa: string;
+  kode_pos: string;
+  email: string;
+  whatsapp: string;
+  angkatan: string;
+  status?: string;
+}
+
+export type AnggotaUpdateInput = Partial<AnggotaCreateInput>;
+
 export interface AnggotaQuery {
   page?: number;
   limit?: number;

@@ -1,5 +1,5 @@
-import { apiFetch, apiFetchPaginated, type Paginated } from '@/services/apiClient';
-import type { AnggotaDetail, AnggotaPublicInfo, AnggotaQuery } from '../types';
+import { api, apiFetch, apiFetchPaginated, type Paginated } from '@/services/apiClient';
+import type { AnggotaCreateInput, AnggotaDetail, AnggotaPublicInfo, AnggotaQuery, AnggotaUpdateInput } from '../types';
 
 export function checkPublic(nia: string): Promise<AnggotaPublicInfo> {
   return apiFetch<AnggotaPublicInfo>(`/anggota/cek?q=${encodeURIComponent(nia)}`);
@@ -51,4 +51,39 @@ export function adminKtaUrl(id: number): Promise<{ download_url: string }> {
 // anggota via antrian). Tidak ada password di respons admin.
 export function resetMemberPassword(id: number): Promise<void> {
   return apiFetch<void>(`/admin/anggota/${id}/reset-password`, { method: 'POST' });
+}
+
+// adminCreateAnggota: tambah anggota langsung (di luar alur pendaftaran).
+export function adminCreateAnggota(input: AnggotaCreateInput): Promise<AnggotaDetail> {
+  return apiFetch<AnggotaDetail>('/admin/anggota', { method: 'POST', data: input });
+}
+
+// adminUpdateAnggota: sunting data anggota.
+export function adminUpdateAnggota(id: number, input: AnggotaUpdateInput): Promise<AnggotaDetail> {
+  return apiFetch<AnggotaDetail>(`/admin/anggota/${id}`, { method: 'PUT', data: input });
+}
+
+// adminSetAnggotaStatus: ubah status keanggotaan (soft delete = NONAKTIF).
+export function adminSetAnggotaStatus(id: number, status: string): Promise<AnggotaDetail> {
+  return apiFetch<AnggotaDetail>(`/admin/anggota/${id}/status`, { method: 'PATCH', data: { status } });
+}
+
+// adminDeactivateAnggota: soft delete via DELETE.
+export function adminDeactivateAnggota(id: number): Promise<void> {
+  return apiFetch<void>(`/admin/anggota/${id}`, { method: 'DELETE' });
+}
+
+// adminExportAnggota: unduh CSV ter-scope (blob via axios agar ber-otorisasi).
+export async function adminExportAnggota(status?: string, search?: string): Promise<void> {
+  const p = new URLSearchParams();
+  if (status) p.set('status', status);
+  if (search) p.set('search', search);
+  const qs = p.toString();
+  const res = await api.get(`/admin/anggota/export.csv${qs ? `?${qs}` : ''}`, { responseType: 'blob' });
+  const url = URL.createObjectURL(res.data as Blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'data-anggota.csv';
+  link.click();
+  URL.revokeObjectURL(url);
 }

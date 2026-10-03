@@ -4,7 +4,8 @@ import Button from '@/components/ui/button';
 import { CursorPager, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
 import { useDebouncedValue } from '@/hooks/useDebounced';
 import { ApiError } from '@/services/apiClient';
-import { adminListAnggotaCursor } from '../api/anggotaService';
+import { adminDeactivateAnggota, adminExportAnggota, adminListAnggotaCursor } from '../api/anggotaService';
+import AnggotaFormModal from '../components/AnggotaFormModal';
 import type { AnggotaDetail } from '../types';
 
 const STATUS_OPTIONS = ['', 'AKTIF', 'NONAKTIF', 'DEMISIONER', 'DIBERHENTIKAN', 'MENINGGAL'];
@@ -19,6 +20,8 @@ export default function AnggotaListPage() {
   const [nextCursor, setNextCursor] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editMember, setEditMember] = useState<AnggotaDetail | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -48,12 +51,36 @@ export default function AnggotaListPage() {
     setHistory([]);
   }
 
+  async function nonaktifkan(a: AnggotaDetail): Promise<void> {
+    if (!window.confirm(`Nonaktifkan anggota ${a.nama_lengkap}?`)) return;
+    try {
+      await adminDeactivateAnggota(a.id);
+      await load();
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Gagal menonaktifkan anggota');
+    }
+  }
+
+  async function ekspor(): Promise<void> {
+    try {
+      await adminExportAnggota(status || undefined, debouncedSearch || undefined);
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Gagal mengekspor CSV');
+    }
+  }
+
   return (
     <div>
       <PageHeader
         title="Data Anggota"
         desc={`Menampilkan ${items.length} kader ber-NIA (keyset).`}
-        action={<Button variant="outline-navy" onClick={() => window.print()}>Cetak / PDF</Button>}
+        action={(
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline-navy" onClick={() => void ekspor()}>Ekspor CSV</Button>
+            <Button variant="outline-navy" onClick={() => window.print()}>Cetak / PDF</Button>
+            <Button variant="primary" onClick={() => { setEditMember(null); setShowForm(true); }}>+ Tambah Anggota</Button>
+          </div>
+        )}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -103,8 +130,14 @@ export default function AnggotaListPage() {
                   <td className="px-4 py-3 text-kipan-text-muted">{a.riwayat || '-'}</td>
                   <td className="px-4 py-3 text-kipan-text-muted">{a.kabupaten_nama || (a.kabupaten_id ? `Kab. #${a.kabupaten_id}` : '-')}</td>
                   <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
-                  <td className="px-4 py-3 text-right">
-                    <Link to={`/admin/anggota/${a.id}`} className="font-semibold text-kipan-blue hover:underline">Detail →</Link>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col items-end gap-1">
+                      <Link to={`/admin/anggota/${a.id}`} className="font-semibold text-kipan-blue hover:underline">Detail →</Link>
+                      <button type="button" onClick={() => { setEditMember(a); setShowForm(true); }} className="font-semibold text-kipan-blue hover:underline">Edit</button>
+                      {a.status !== 'NONAKTIF' && (
+                        <button type="button" onClick={() => void nonaktifkan(a)} className="font-semibold text-kipan-red hover:underline">Nonaktifkan</button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -127,6 +160,8 @@ export default function AnggotaListPage() {
           setCursor(nextCursor);
         }}
       />
+
+      <AnggotaFormModal open={showForm} member={editMember} onClose={() => setShowForm(false)} onDone={load} />
     </div>
   );
 }

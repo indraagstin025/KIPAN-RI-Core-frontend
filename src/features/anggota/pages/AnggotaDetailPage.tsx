@@ -8,7 +8,8 @@ import PromotePengurusWizard from '@/features/kepengurusan/components/PromotePen
 import { canPromotePengurus } from '@/features/kepengurusan/roles';
 import { presignView } from '@/features/storage/api/storageService';
 import { ApiError } from '@/services/apiClient';
-import { adminGetAnggota, adminKtaUrl, resetMemberPassword } from '../api/anggotaService';
+import { adminDeactivateAnggota, adminGetAnggota, adminKtaUrl, resetMemberPassword } from '../api/anggotaService';
+import AnggotaFormModal from '../components/AnggotaFormModal';
 import type { AnggotaDetail } from '../types';
 
 const DOC_FIELDS: Array<{ field: keyof AnggotaDetail; label: string }> = [
@@ -30,6 +31,7 @@ export default function AnggotaDetailPage() {
   const [resetting, setResetting] = useState(false);
   const [unduh, setUnduh] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -86,6 +88,17 @@ export default function AnggotaDetailPage() {
     }
   }
 
+  async function nonaktifkan(): Promise<void> {
+    if (!item) return;
+    if (!window.confirm(`Nonaktifkan anggota ${item.nama_lengkap}?`)) return;
+    try {
+      await adminDeactivateAnggota(item.id);
+      await load();
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Gagal menonaktifkan anggota');
+    }
+  }
+
   if (loading) return <Loading />;
   if (!item) return <ErrorBox message={error ?? 'Data tidak ditemukan'} />;
 
@@ -95,8 +108,12 @@ export default function AnggotaDetailPage() {
         title={item.nama_lengkap}
         desc={`${item.nia} · ${item.tipe}`}
         action={(
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <StatusBadge status={item.status} />
+            <Button variant="outline-navy" onClick={() => setShowForm(true)}>Edit</Button>
+            {item.status !== 'NONAKTIF' && (
+              <Button variant="outline-navy" onClick={() => void nonaktifkan()}>Nonaktifkan</Button>
+            )}
             {item.tipe === 'KADER' && canPromotePengurus(user?.role) && (
               <Button variant="primary" onClick={() => setShowWizard(true)}>Jadikan Pengurus</Button>
             )}
@@ -178,6 +195,8 @@ export default function AnggotaDetailPage() {
         actorRole={user?.role}
         presetAnggota={item}
       />
+
+      <AnggotaFormModal open={showForm} member={item} onClose={() => setShowForm(false)} onDone={load} />
     </div>
   );
 }
