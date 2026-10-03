@@ -25,6 +25,7 @@ import RevisiPage from './features/tracking/pages/RevisiPage';
 import AntreanPage from './features/verification/pages/AntreanPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import LaporanPage from './features/laporan/pages/LaporanPage';
+import AuditPage from './features/audit/pages/AuditPage';
 import DetailPage from './features/verification/pages/DetailPage';
 import WilayahPage from './features/wilayah/pages/WilayahPage';
 import UserManagementPage from './features/users/pages/UserManagementPage';
@@ -63,6 +64,7 @@ export default function App() {
           {/* Admin */}
           <Route path="/admin" element={<AdminOnly><DashboardPage /></AdminOnly>} />
           <Route path="/admin/laporan" element={<AdminOnly><LaporanPage /></AdminOnly>} />
+          <Route path="/admin/audit" element={<AdminOnly><RequireRole roles={['SUPER_ADMIN', 'ADMIN_NASIONAL']}><AuditPage /></RequireRole></AdminOnly>} />
           <Route path="/admin/pendaftaran" element={<AdminOnly><AntreanPage /></AdminOnly>} />
           <Route path="/admin/pendaftaran/:id" element={<AdminOnly><DetailPage /></AdminOnly>} />
           <Route path="/admin/anggota" element={<AdminOnly><AnggotaListPage /></AdminOnly>} />
