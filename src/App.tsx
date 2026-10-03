@@ -27,6 +27,8 @@ import DashboardPage from './features/dashboard/pages/DashboardPage';
 import LaporanPage from './features/laporan/pages/LaporanPage';
 import AuditPage from './features/audit/pages/AuditPage';
 import RolePage from './features/roles/pages/RolePage';
+import OrganisasiPage from './features/organisasi/pages/OrganisasiPage';
+import OrganisasiPublicPage from './features/organisasi/pages/OrganisasiPublicPage';
 import DetailPage from './features/verification/pages/DetailPage';
 import WilayahPage from './features/wilayah/pages/WilayahPage';
 import UserManagementPage from './features/users/pages/UserManagementPage';
@@ -57,6 +59,7 @@ export default function App() {
           <Route path="/revisi" element={<RevisiPage />} />
           <Route path="/verifikasi-kta" element={<VerifikasiKtaPage />} />
           <Route path="/anggota" element={<CekAnggotaPage />} />
+          <Route path="/profil" element={<OrganisasiPublicPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/lupa-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -67,6 +70,7 @@ export default function App() {
           <Route path="/admin/laporan" element={<AdminOnly><LaporanPage /></AdminOnly>} />
           <Route path="/admin/audit" element={<AdminOnly><RequireRole roles={['SUPER_ADMIN', 'ADMIN_NASIONAL']}><AuditPage /></RequireRole></AdminOnly>} />
           <Route path="/admin/roles" element={<AdminOnly><RequireRole roles={['SUPER_ADMIN']}><RolePage /></RequireRole></AdminOnly>} />
+          <Route path="/admin/organisasi" element={<AdminOnly><RequireRole roles={['SUPER_ADMIN']}><OrganisasiPage /></RequireRole></AdminOnly>} />
           <Route path="/admin/pendaftaran" element={<AdminOnly><AntreanPage /></AdminOnly>} />
           <Route path="/admin/pendaftaran/:id" element={<AdminOnly><DetailPage /></AdminOnly>} />
           <Route path="/admin/anggota" element={<AdminOnly><AnggotaListPage /></AdminOnly>} />

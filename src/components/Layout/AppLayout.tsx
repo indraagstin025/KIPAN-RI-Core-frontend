@@ -37,7 +37,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const outboxNav: NavItem[] = admin ? [{ to: '/admin/email-outbox', label: 'Antrian Email' }] : [];
   const auditNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/audit', label: 'Jejak Audit' }] : [];
   const rolesNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/roles', label: 'Role & Wewenang' }] : [];
-  const nav = admin ? [...ADMIN_NAV, ...wilayahNav, ...jabatanNav, ...usersNav, ...outboxNav, ...auditNav, ...rolesNav, ...ACCOUNT_NAV] : [...USER_NAV, ...ACCOUNT_NAV];
+  const organisasiNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/organisasi', label: 'Profil Organisasi' }] : [];
+  const nav = admin ? [...ADMIN_NAV, ...wilayahNav, ...jabatanNav, ...usersNav, ...outboxNav, ...auditNav, ...rolesNav, ...organisasiNav, ...ACCOUNT_NAV] : [...USER_NAV, ...ACCOUNT_NAV];
 
   async function onLogout(): Promise<void> {
     const isAdmin = isAdminRole(user?.role);
