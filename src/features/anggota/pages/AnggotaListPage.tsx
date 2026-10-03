@@ -84,8 +84,9 @@ export default function AnggotaListPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-kipan-soft-blue text-xs uppercase tracking-wide text-kipan-text-muted">
               <tr>
-                <th className="px-4 py-3">NIA</th>
-                <th className="px-4 py-3">Nama</th>
+                <th className="px-4 py-3">Nama / NIA</th>
+                <th className="px-4 py-3">Pekerjaan</th>
+                <th className="px-4 py-3">Riwayat</th>
                 <th className="px-4 py-3">Wilayah</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3" />
@@ -93,9 +94,13 @@ export default function AnggotaListPage() {
             </thead>
             <tbody>
               {items.map((a) => (
-                <tr key={a.id} className="border-t border-kipan-border hover:bg-kipan-soft-gray/60">
-                  <td className="px-4 py-3 font-mono text-xs font-semibold text-kipan-navy">{a.nia}</td>
-                  <td className="px-4 py-3 font-semibold text-kipan-text-dark">{a.nama_lengkap}</td>
+                <tr key={a.id} className="border-t border-kipan-border align-top hover:bg-kipan-soft-gray/60">
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-kipan-text-dark">{a.nama_lengkap}</div>
+                    <div className="font-mono text-xs font-semibold text-kipan-navy">{a.nia}</div>
+                  </td>
+                  <td className="px-4 py-3 text-kipan-text-muted">{a.pekerjaan || '-'}</td>
+                  <td className="px-4 py-3 text-kipan-text-muted">{a.riwayat || '-'}</td>
                   <td className="px-4 py-3 text-kipan-text-muted">{a.kabupaten_nama || (a.kabupaten_id ? `Kab. #${a.kabupaten_id}` : '-')}</td>
                   <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
                   <td className="px-4 py-3 text-right">

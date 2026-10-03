@@ -11,6 +11,8 @@ export interface AnggotaListItem {
   nia: string;
   nama_lengkap: string;
   status: string;
+  pekerjaan: string;
+  riwayat: string;
   provinsi_id: number;
   provinsi_nama: string;
   kabupaten_id: number;
@@ -52,6 +54,7 @@ export interface AnggotaDetail {
   user_id?: string;
   tanggal_daftar: string;
   tanggal_angkat: string;
+  riwayat?: string;
 }
 
 export interface AnggotaQuery {

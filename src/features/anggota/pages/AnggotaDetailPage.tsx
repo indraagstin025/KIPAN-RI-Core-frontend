@@ -125,6 +125,7 @@ export default function AnggotaDetailPage() {
             <Row label="Agama">{item.agama}</Row>
             <Row label="Pendidikan">{item.pendidikan}</Row>
             <Row label="Pekerjaan">{item.pekerjaan}</Row>
+            <Row label="Riwayat Kepengurusan" className="sm:col-span-2">{item.riwayat || '-'}</Row>
             <Row label="Angkatan">{item.angkatan}</Row>
             <Row label="Alamat" className="sm:col-span-2">{item.alamat}, {item.kecamatan}, {item.desa} {item.kode_pos}</Row>
             <Row label="Email">{item.email}</Row>
