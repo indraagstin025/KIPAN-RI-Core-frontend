@@ -5,27 +5,43 @@ import { useLocation } from 'react-router-dom';
 // - bila ada hash (#section) → scroll ke elemen tersebut (dengan offset navbar),
 //   memungkinkan navigasi antar-halaman ke section landing (mis. "/#tentang").
 // - selain itu → reset ke atas agar halaman baru tampil dari awal.
-const HEADER_OFFSET = 80;
+export const HEADER_OFFSET = 80;
+
+export function scrollToHash(hash: string, behavior: ScrollBehavior = 'smooth'): void {
+  const id = hash.replace(/^#/, '');
+  if (!id || id === 'beranda') {
+    window.scrollTo({ top: 0, behavior });
+    return;
+  }
+
+  let attempts = 0;
+  const maxAttempts = 15;
+
+  const tryScroll = () => {
+    const el = document.getElementById(id);
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+      window.scrollTo({ top: Math.max(0, top), behavior });
+    } else if (attempts < maxAttempts) {
+      attempts++;
+      setTimeout(tryScroll, 40);
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  };
+
+  tryScroll();
+}
 
 export default function ScrollToTop() {
   const { pathname, search, hash } = useLocation();
 
   useEffect(() => {
     if (hash) {
-      const id = hash.replace(/^#/, '');
-      // Tunggu halaman tujuan selesai dirender/di-layout sebelum scroll.
-      const t = window.setTimeout(() => {
-        const el = document.getElementById(id);
-        if (el) {
-          const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
-          window.scrollTo({ top, behavior: 'smooth' });
-        } else {
-          window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-        }
-      }, 60);
-      return () => window.clearTimeout(t);
+      scrollToHash(hash, 'smooth');
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [pathname, search, hash]);
 
   return null;

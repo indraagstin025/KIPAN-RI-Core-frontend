@@ -19,8 +19,17 @@ export default function AdminLoginShortcut() {
     const pressed = new Set<string>();
     let triggered = false;
 
+    const isEditableTarget = (t: EventTarget | null): boolean => {
+      if (!(t instanceof HTMLElement)) return false;
+      if (t.isContentEditable) return true;
+      const tag = t.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    };
+
     const onDown = (e: KeyboardEvent) => {
       if (!e.ctrlKey) return;
+      // Abaikan saat mengetik di form agar Ctrl+A (select-all) tetap normal.
+      if (isEditableTarget(e.target)) return;
       const k = e.key.toLowerCase();
       if (k === 'a' || k === 'i') {
         pressed.add(k);
@@ -84,7 +93,7 @@ export default function AdminLoginShortcut() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-serif text-lg font-bold text-kipan-text-dark">Masuk Admin</h2>
-            <p className="mt-0.5 text-xs text-kipan-text-muted">Akses khusus petugas / pengurus KIPAN.</p>
+            <p className="mt-0.5 text-xs text-kipan-text-muted">Akses khusus petugas KIPAN.</p>
           </div>
           <button
             type="button"

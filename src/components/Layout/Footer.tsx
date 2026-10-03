@@ -20,10 +20,10 @@ export default function Footer() {
         <nav aria-label="Tautan layanan">
           <p className="text-sm font-bold uppercase tracking-widest text-kipan-yellow">Layanan</p>
           <ul className="mt-4 space-y-2.5 text-sm">
-            <li><Link to="/daftar?tipe=kader" className="hover:text-white">Daftar sebagai Kader</Link></li>
-            <li><Link to="/daftar?tipe=pengurus" className="hover:text-white">Daftar sebagai Pengurus</Link></li>
+            <li><Link to="/daftar" className="hover:text-white">Daftar sebagai Kader</Link></li>
             <li><Link to="/lacak" className="hover:text-white">Lacak Status Pendaftaran</Link></li>
             <li><Link to="/verifikasi-kta" className="hover:text-white">Verifikasi KTA</Link></li>
+            <li><Link to="/anggota" className="hover:text-white">Cek Keanggotaan Kader</Link></li>
           </ul>
         </nav>
         <div>

@@ -1,11 +1,21 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import LoginForm from '../components/LoginForm';
+import { isAdminRole } from '../types';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  async function handleLogin(email: string, password: string) {
+    const user = await login(email, password);
+    if (isAdminRole(user.role)) {
+      await logout();
+      throw new Error('Akun ini bukan akun anggota/kader.');
+    }
+    return user;
+  }
 
   const from = (location.state as { from?: string } | null)?.from;
   const target = from && !from.startsWith('/admin') ? from : '/akun/kta';
@@ -14,7 +24,7 @@ export default function LoginPage() {
     <LoginForm
       title="Masuk Anggota"
       subtitle="Akun anggota & kader KIPAN"
-      onSubmit={login}
+      onSubmit={handleLogin}
       onSuccess={() => navigate(target, { replace: true })}
       footer={
         <p className="mt-4 text-center text-xs text-kipan-text-muted">

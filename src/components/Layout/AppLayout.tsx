@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import NotificationBell from '@/features/notification/components/NotificationBell';
 import { isAdminRole } from '@/features/auth/types';
+import { canManageJabatan } from '@/features/kepengurusan/roles';
 
 interface NavItem {
   to: string;
@@ -14,6 +15,8 @@ const ADMIN_NAV: NavItem[] = [
   { to: '/admin', label: 'Dasbor', end: true },
   { to: '/admin/pendaftaran', label: 'Antrean Pendaftaran' },
   { to: '/admin/anggota', label: 'Data Anggota' },
+  { to: '/admin/sk', label: 'Surat Keputusan' },
+  { to: '/admin/pengurus', label: 'Pengurus' },
 ];
 
 const USER_NAV: NavItem[] = [{ to: '/akun/kta', label: 'KTA Saya' }];
@@ -26,7 +29,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
 
   const admin = isAdminRole(user?.role);
-  const nav = admin ? [...ADMIN_NAV, ...ACCOUNT_NAV] : [...USER_NAV, ...ACCOUNT_NAV];
+  const jabatanNav: NavItem[] = canManageJabatan(user?.role) ? [{ to: '/admin/jabatan', label: 'Master Jabatan' }] : [];
+  const isNasionalOrSuper = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL';
+  const wilayahNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/wilayah', label: 'Wilayah' }] : [];
+  const usersNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/users', label: 'Manajemen Pengguna' }] : [];
+  const nav = admin ? [...ADMIN_NAV, ...wilayahNav, ...jabatanNav, ...usersNav, ...ACCOUNT_NAV] : [...USER_NAV, ...ACCOUNT_NAV];
 
   async function onLogout(): Promise<void> {
     const isAdmin = isAdminRole(user?.role);

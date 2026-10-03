@@ -3,7 +3,7 @@ import Reveal from '../Layout/Reveal';
 
 export default function TentangSection() {
   return (
-    <section id="tentang" className="bg-kipan-soft-blue py-16 sm:py-20">
+    <section id="tentang" className="bg-kipan-soft-blue py-16 sm:py-20 scroll-mt-20">
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
         <Reveal>
           <img

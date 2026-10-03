@@ -69,6 +69,11 @@ function doRefresh(): Promise<string | null> {
             })
             .catch(() => {
                 setAccessToken(null);
+                // A3: refresh gagal = sesi mati. Beri tahu AuthContext agar
+                // keluar otomatis (hindari sesi "zombie").
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new Event('auth:expired'));
+                }
                 return null;
             })
             .finally(() => {
@@ -89,6 +94,7 @@ api.interceptors.response.use(
     const url = original?.url ?? '';
     const skipRefresh =
       url.includes('/auth/login') ||
+      url.includes('/auth/logout') ||
       url.includes('/auth/refresh') ||
       url.includes('/auth/forgot-password') ||
       url.includes('/auth/reset-password');
@@ -122,6 +128,9 @@ export interface PaginationMeta {
   per_page: number;
   total: number;
   total_pages: number;
+  // Varían keyset (B8): cursor halaman berikutnya (kosong = habis).
+  next_cursor?: string;
+  with_total?: boolean;
 }
 
 export interface Paginated<T> {

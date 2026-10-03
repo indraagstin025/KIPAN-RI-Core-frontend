@@ -9,7 +9,7 @@ let accessToken: string | null = null;
 
 // Penanda non-sensitif (tanpa token) agar aplikasi tahu ada kemungkinan sesi
 // refresh cookie tanpa harus menembak endpoint sia-sia pada pengunjung anonim.
-const SESSION_HINT_KEY = 'kipan_has_session';
+export const SESSION_HINT_KEY = 'kipan_has_session';
 
 export function getAccessToken(): string | null {
   return accessToken;

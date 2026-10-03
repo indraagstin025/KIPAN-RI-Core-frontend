@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { hasSessionHint, setAccessToken } from '@/config/env';
+import { SESSION_HINT_KEY, hasSessionHint, setAccessToken } from '@/config/env';
 import * as authApi from '@/features/auth/api/authService';
 import type { AuthUser } from '@/features/auth/types';
 
@@ -39,6 +39,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     })();
   }, [refreshUser]);
+
+  useEffect(() => {
+    const clearLocalSession = () => {
+      setAccessToken(null);
+      setUser(null);
+    };
+    // A3: sesi mati (refresh gagal) → keluar otomatis. RequireAuth lalu
+    // mengarahkan ke halaman login yang sesuai.
+    const onExpired = () => clearLocalSession();
+    // B7: logout di tab lain → sinkronkan tab ini.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === SESSION_HINT_KEY && e.newValue === null) clearLocalSession();
+    };
+    window.addEventListener('auth:expired', onExpired);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('auth:expired', onExpired);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login(email, password);

@@ -1,5 +1,5 @@
 export type Role = 'SUPER_ADMIN' | 'ADMIN_NASIONAL' | 'ADMIN_PROVINSI' | 'ADMIN_KABUPATEN' | 'USER';
-export type UserTipe = 'KADER' | 'PENGURUS';
+export type UserTipe = 'KADER' | 'PENGURUS' | 'ADMIN';
 
 export interface AuthUser {
   id: string;

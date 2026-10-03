@@ -15,12 +15,18 @@ import AnggotaListPage from './features/anggota/pages/AnggotaListPage';
 import CekAnggotaPage from './features/anggota/pages/CekAnggotaPage';
 import KtaSayaPage from './features/kta/pages/KtaSayaPage';
 import VerifikasiKtaPage from './features/kta/pages/VerifikasiKtaPage';
+import JabatanPage from './features/kepengurusan/pages/JabatanPage';
+import PengurusListPage from './features/kepengurusan/pages/PengurusListPage';
+import SkDetailPage from './features/kepengurusan/pages/SkDetailPage';
+import SkListPage from './features/kepengurusan/pages/SkListPage';
 import DaftarPage from './features/pendaftaran/pages/DaftarPage';
 import LacakPage from './features/tracking/pages/LacakPage';
 import RevisiPage from './features/tracking/pages/RevisiPage';
 import AntreanPage from './features/verification/pages/AntreanPage';
-import DashboardPage from './features/verification/pages/DashboardPage';
+import DashboardPage from './features/dashboard/pages/DashboardPage';
 import DetailPage from './features/verification/pages/DetailPage';
+import WilayahPage from './features/wilayah/pages/WilayahPage';
+import UserManagementPage from './features/users/pages/UserManagementPage';
 import LandingPage from './pages/public/LandingPage';
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
@@ -57,6 +63,21 @@ export default function App() {
           <Route path="/admin/pendaftaran/:id" element={<AdminOnly><DetailPage /></AdminOnly>} />
           <Route path="/admin/anggota" element={<AdminOnly><AnggotaListPage /></AdminOnly>} />
           <Route path="/admin/anggota/:id" element={<AdminOnly><AnggotaDetailPage /></AdminOnly>} />
+          <Route path="/admin/sk" element={<AdminOnly><SkListPage /></AdminOnly>} />
+          <Route path="/admin/sk/:id" element={<AdminOnly><SkDetailPage /></AdminOnly>} />
+          <Route path="/admin/pengurus" element={<AdminOnly><PengurusListPage /></AdminOnly>} />
+          <Route
+            path="/admin/jabatan"
+            element={<AdminOnly><RequireRole roles={['SUPER_ADMIN', 'ADMIN_NASIONAL']}><JabatanPage /></RequireRole></AdminOnly>}
+          />
+          <Route
+            path="/admin/wilayah"
+            element={<AdminOnly><RequireRole roles={['SUPER_ADMIN', 'ADMIN_NASIONAL']}><WilayahPage /></RequireRole></AdminOnly>}
+          />
+          <Route
+            path="/admin/users"
+            element={<AdminOnly><RequireRole roles={['SUPER_ADMIN']}><UserManagementPage /></RequireRole></AdminOnly>}
+          />
 
           {/* Akun (semua role terotentikasi) */}
           <Route
@@ -65,7 +86,7 @@ export default function App() {
           />
           <Route
             path="/akun/kta"
-            element={<RequireAuth><AppLayout><KtaSayaPage /></AppLayout></RequireAuth>}
+            element={<RequireAuth><RequireRole roles={['USER']}><AppLayout><KtaSayaPage /></AppLayout></RequireRole></RequireAuth>}
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />

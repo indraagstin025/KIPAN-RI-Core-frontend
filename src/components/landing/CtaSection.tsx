@@ -13,8 +13,7 @@ export default function CtaSection() {
           Pendaftaran gratis, terverifikasi resmi, dan data Anda dilindungi standar keamanan perbankan.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Button to="/daftar?tipe=kader" variant="accent">Daftar sebagai Kader</Button>
-          <Button to="/daftar?tipe=pengurus" variant="outline-white">Daftar sebagai Pengurus</Button>
+          <Button to="/daftar" variant="accent">Daftar sebagai Kader</Button>
         </div>
       </Reveal>
     </section>

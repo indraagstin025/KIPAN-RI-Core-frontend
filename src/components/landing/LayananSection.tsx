@@ -4,7 +4,7 @@ import Reveal from '../Layout/Reveal';
 const items = [
   {
     title: 'Lacak Status Pendaftaran',
-    desc: 'Masukkan nomor pendaftaran (REG-YYYYMM-XXXXX) untuk melihat status berkas: Diajukan, Diverifikasi, Perbaikan, Disetujui, atau Ditolak.',
+    desc: 'Masukkan nomor pendaftaran (REG-YYYYMM-XXXXX) untuk melihat status berkas: Draf, Diverifikasi, Perbaikan, Disetujui, Ditolak, atau Kedaluwarsa.',
     to: '/lacak',
     cta: 'Lacak Sekarang',
   },

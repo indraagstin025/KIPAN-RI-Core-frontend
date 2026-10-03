@@ -40,6 +40,7 @@ export function ErrorBox({ message }: { message: string }) {
 }
 
 const STATUS_STYLE: Record<string, string> = {
+  DRAFT: 'bg-blue-100 text-kipan-navy',
   DIAJUKAN: 'bg-blue-100 text-kipan-navy',
   DIVERIFIKASI: 'bg-amber-100 text-amber-700',
   PERBAIKAN: 'bg-orange-100 text-orange-700',
@@ -50,11 +51,46 @@ const STATUS_STYLE: Record<string, string> = {
   DEMISIONER: 'bg-amber-100 text-amber-700',
   DIBERHENTIKAN: 'bg-red-100 text-kipan-red',
   MENINGGAL: 'bg-gray-100 text-gray-600',
+  KEDALUWARSA: 'bg-gray-100 text-gray-600',
+  Aktif: 'bg-emerald-100 text-kipan-green',
+  Nonaktif: 'bg-gray-100 text-gray-600',
+  Suspended: 'bg-red-100 text-kipan-red',
+  Demisioner: 'bg-amber-100 text-amber-700',
+  Diberhentikan: 'bg-red-100 text-kipan-red',
+  'Mengundurkan Diri': 'bg-gray-100 text-gray-600',
+  Meninggal: 'bg-gray-100 text-gray-600',
+  Digantikan: 'bg-gray-100 text-gray-600',
+  TidakAktif: 'bg-gray-100 text-gray-600',
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
   const cls = STATUS_STYLE[status] ?? 'bg-kipan-soft-blue text-kipan-navy';
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${cls}`}>{label ?? status}</span>;
+}
+
+export function CursorPager({ hasPrev, hasNext, onPrev, onNext }: { hasPrev: boolean; hasNext: boolean; onPrev: () => void; onNext: () => void }) {
+  if (!hasPrev && !hasNext) return null;
+  return (
+    <div className="mt-5 flex items-center justify-between gap-3 text-sm">
+      <button
+        type="button"
+        disabled={!hasPrev}
+        onClick={onPrev}
+        className="rounded-lg border border-kipan-border px-4 py-2 font-semibold text-kipan-navy disabled:opacity-40"
+      >
+        ← Sebelumnya
+      </button>
+      <span className="text-kipan-text-muted">Halaman ini {hasNext ? '·' : '(halaman terakhir)'}</span>
+      <button
+        type="button"
+        disabled={!hasNext}
+        onClick={onNext}
+        className="rounded-lg border border-kipan-border px-4 py-2 font-semibold text-kipan-navy disabled:opacity-40"
+      >
+        Berikutnya →
+      </button>
+    </div>
+  );
 }
 
 export function Pagination({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (p: number) => void }) {
