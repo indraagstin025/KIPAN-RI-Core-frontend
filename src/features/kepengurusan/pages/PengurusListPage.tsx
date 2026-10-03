@@ -1,26 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '@/components/ui/button';
-import { Alert, Field, SelectInput, TextInput } from '@/components/ui/fields';
-import { Overlay } from '@/components/ui/loading';
+import { Alert, SelectInput, TextInput } from '@/components/ui/fields';
 import { Card, ErrorBox, Loading, PageHeader, Pagination, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
-import { adminListAnggota } from '@/features/anggota/api/anggotaService';
-import type { AnggotaDetail } from '@/features/anggota/types';
 import { useWilayah } from '@/features/pendaftaran/hooks/useWilayah';
 import { useDebouncedValue } from '@/hooks/useDebounced';
 import { ApiError } from '@/services/apiClient';
 import {
-  adminAddPengurus,
   adminListJabatan,
   adminListPengurus,
-  adminListSK,
   adminPengurusStats,
   adminUpdatePengurusJabatan,
   adminUpdatePengurusStatus,
 } from '../api/kepengurusanService';
+import PromotePengurusWizard from '../components/PromotePengurusWizard';
 import { canManagePengurusForLevel } from '../roles';
-import type { Jabatan, PengurusDetail, PengurusStats, PengurusStatus, SKListItem } from '../types';
+import type { Jabatan, PengurusDetail, PengurusStats, PengurusStatus } from '../types';
 
 const STATUS_OPTIONS: PengurusStatus[] = ['Aktif', 'Demisioner', 'Diberhentikan', 'Mengundurkan Diri', 'Meninggal'];
 const MASA_OPTIONS = [
@@ -79,17 +75,8 @@ export default function PengurusListPage() {
   const [editingJabatan, setEditingJabatan] = useState<number | null>(null);
   const [newJabatanId, setNewJabatanId] = useState('');
 
-  // Tambah Pengurus global
-  const [showTambah, setShowTambah] = useState(false);
-  const [skOptions, setSkOptions] = useState<SKListItem[]>([]);
-  const [skTerpilih, setSkTerpilih] = useState<SKListItem | null>(null);
-  const [jabatanSK, setJabatanSK] = useState<Jabatan[]>([]);
-  const [cariAnggota, setCariAnggota] = useState('');
-  const [hasilAnggota, setHasilAnggota] = useState<AnggotaDetail[]>([]);
-  const [anggotaTerpilih, setAnggotaTerpilih] = useState<AnggotaDetail | null>(null);
-  const [jabatanTerpilih, setJabatanTerpilih] = useState('');
-  const [konfirmasi, setKonfirmasi] = useState(false);
-  const [busy, setBusy] = useState(false);
+  // Wizard pengangkatan terpadu (SK → Anggota → Jabatan → Konfirmasi).
+  const [showWizard, setShowWizard] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -182,88 +169,6 @@ export default function PengurusListPage() {
     }
   }
 
-  async function bukaTambah(): Promise<void> {
-    setShowTambah((v) => !v);
-    setAksiError(null);
-    setSkTerpilih(null);
-    setJabatanSK([]);
-    setAnggotaTerpilih(null);
-    setHasilAnggota([]);
-    setCariAnggota('');
-    setJabatanTerpilih('');
-    setKonfirmasi(false);
-    if (skOptions.length > 0) return;
-    try {
-      const res = await adminListSK({ page: 1, limit: 100, status: 'Aktif' });
-      setSkOptions(res.data.filter((s) => s.approval_status !== 'DISETUJUI' && canManagePengurusForLevel(user?.role, s.level)));
-    } catch (e: unknown) {
-      setAksiError(e instanceof ApiError ? e.message : 'Gagal memuat daftar SK');
-    }
-  }
-
-  async function pilihSK(id: string): Promise<void> {
-    const sk = skOptions.find((s) => String(s.id) === id) ?? null;
-    setSkTerpilih(sk);
-    setJabatanTerpilih('');
-    setAksiError(null);
-    if (!sk) {
-      setJabatanSK([]);
-      return;
-    }
-    try {
-      setJabatanSK(await adminListJabatan(false, sk.level));
-    } catch (e: unknown) {
-      setAksiError(e instanceof ApiError ? e.message : 'Gagal memuat jabatan');
-    }
-  }
-
-  async function cariAnggotaSubmit(): Promise<void> {
-    setAksiError(null);
-    try {
-      const res = await adminListAnggota({ page: 1, limit: 8, search: cariAnggota.trim() || undefined, status: 'AKTIF' });
-      setHasilAnggota(res.data);
-    } catch (e: unknown) {
-      setAksiError(e instanceof ApiError ? e.message : 'Gagal mencari anggota');
-    }
-  }
-
-  async function tambahPengurus(): Promise<void> {
-    setAksiError(null);
-    if (!skTerpilih) {
-      setAksiError('Pilih SK terlebih dahulu.');
-      return;
-    }
-    if (!anggotaTerpilih) {
-      setAksiError('Pilih anggota terlebih dahulu.');
-      return;
-    }
-    if (!jabatanTerpilih) {
-      setAksiError('Pilih jabatan terlebih dahulu.');
-      return;
-    }
-    if (!konfirmasi) {
-      setAksiError('Centang konfirmasi kelayakan.');
-      return;
-    }
-    setBusy(true);
-    try {
-      await adminAddPengurus(skTerpilih.id, anggotaTerpilih.id, Number(jabatanTerpilih), true);
-      setSkTerpilih(null);
-      setJabatanSK([]);
-      setAnggotaTerpilih(null);
-      setHasilAnggota([]);
-      setCariAnggota('');
-      setJabatanTerpilih('');
-      setKonfirmasi(false);
-      setShowTambah(false);
-      await load();
-    } catch (e: unknown) {
-      setAksiError(e instanceof ApiError ? e.message : 'Gagal menambahkan pengurus');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const tabs: { value: string; label: string; count: number }[] = [
     { value: '', label: 'Semua', count: stats.total },
     { value: 'NASIONAL', label: 'Nasional', count: stats.nasional },
@@ -279,7 +184,7 @@ export default function PengurusListPage() {
         action={(
           <div className="flex gap-2">
             <Button variant="outline-navy" onClick={() => window.print()}>Cetak / PDF</Button>
-            <Button variant="primary" onClick={() => void bukaTambah()}>{showTambah ? 'Tutup' : '+ Tambah Pengurus'}</Button>
+            <Button variant="primary" onClick={() => setShowWizard(true)}>+ Tambah Pengurus</Button>
           </div>
         )}
       />
@@ -293,65 +198,6 @@ export default function PengurusListPage() {
       </div>
 
       {aksiError && <div className="mb-4"><Alert kind="error">{aksiError}</Alert></div>}
-
-      {showTambah && (
-        <div className="mb-5 rounded-2xl border border-kipan-border bg-white p-5 shadow-sm sm:p-6">
-          <p className="mb-4 text-base font-bold text-kipan-text-dark">Tambah Pengurus</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="SK" required hint="Hanya SK aktif yang boleh dikelola & belum final">
-              <SelectInput
-                value={skTerpilih ? String(skTerpilih.id) : ''}
-                onChange={(v) => void pilihSK(v)}
-                placeholder="Pilih SK"
-                id="tp-sk"
-                options={skOptions.map((s) => ({ value: String(s.id), label: `${s.nomor_sk} — ${s.level}` }))}
-              />
-            </Field>
-            <Field label="Jabatan" required>
-              <SelectInput
-                value={jabatanTerpilih}
-                onChange={setJabatanTerpilih}
-                placeholder={skTerpilih ? 'Pilih jabatan' : 'Pilih SK dahulu'}
-                id="tp-jabatan"
-                options={jabatanSK.map((j) => ({ value: String(j.id), label: `${j.nama}${j.is_inti ? ' (inti)' : ''}` }))}
-              />
-            </Field>
-            <div className="sm:col-span-2">
-              <Field label="Cari Anggota (nama / NIA)" required hint="Hanya anggota AKTIF di wilayah SK">
-                <div className="flex gap-2">
-                  <TextInput value={cariAnggota} onChange={setCariAnggota} placeholder="Ketik nama atau NIA" id="tp-cari" />
-                  <Button variant="primary" onClick={() => void cariAnggotaSubmit()}>Cari</Button>
-                </div>
-              </Field>
-            </div>
-          </div>
-
-          {hasilAnggota.length > 0 && (
-            <div className="mt-3 max-h-48 overflow-auto rounded-lg border border-kipan-border bg-white">
-              {hasilAnggota.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  onClick={() => setAnggotaTerpilih(a)}
-                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-kipan-soft-blue ${anggotaTerpilih?.id === a.id ? 'bg-kipan-soft-blue font-semibold' : ''}`}
-                >
-                  <span>{a.nama_lengkap}</span>
-                  <span className="font-mono text-xs text-kipan-text-muted">{a.nia}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {anggotaTerpilih && <p className="mt-2 text-xs font-semibold text-kipan-green">Terpilih: {anggotaTerpilih.nama_lengkap} ({anggotaTerpilih.nia})</p>}
-
-          <label className="mt-3 flex items-start gap-2 text-sm text-kipan-text-dark">
-            <input type="checkbox" checked={konfirmasi} onChange={(e) => setKonfirmasi(e.target.checked)} className="mt-0.5 h-4 w-4 accent-kipan-navy" />
-            Saya mengonfirmasi kader ini layak diangkat (penilaian kelayakan dilakukan di luar sistem).
-          </label>
-          <div className="mt-3">
-            <Button variant="accent" onClick={() => void tambahPengurus()} disabled={busy}>Angkat sebagai Pengurus</Button>
-          </div>
-        </div>
-      )}
 
       <div className="mb-3 flex flex-wrap gap-2">
         {tabs.map((t) => (
@@ -483,7 +329,8 @@ export default function PengurusListPage() {
         </div>
       )}
       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-      {busy && <Overlay label="Memproses..." />}
+
+      <PromotePengurusWizard open={showWizard} onClose={() => setShowWizard(false)} onDone={load} actorRole={user?.role} />
     </div>
   );
 }

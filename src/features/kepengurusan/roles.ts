@@ -48,3 +48,9 @@ export function canManagePengurusForLevel(role?: Role | null, level?: string | n
       return false;
   }
 }
+
+// canPromotePengurus: apakah role boleh membuka wizard pengangkatan (scoping
+// per-SK ditegakkan di wizard & backend).
+export function canPromotePengurus(role?: Role | null): boolean {
+  return role === 'SUPER_ADMIN' || role === 'ADMIN_NASIONAL' || role === 'ADMIN_PROVINSI' || role === 'ADMIN_KABUPATEN';
+}

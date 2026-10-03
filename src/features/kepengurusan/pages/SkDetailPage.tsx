@@ -1,24 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Button from '@/components/ui/button';
-import { Alert, Field, SelectInput, TextInput } from '@/components/ui/fields';
-import { Overlay, Spinner } from '@/components/ui/loading';
+import { Alert, Field, TextInput } from '@/components/ui/fields';
+import { Overlay } from '@/components/ui/loading';
 import { Card, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
-import { adminListAnggota } from '@/features/anggota/api/anggotaService';
-import type { AnggotaDetail } from '@/features/anggota/types';
 import { presignView } from '@/features/storage/api/storageService';
 import { ApiError } from '@/services/apiClient';
 import {
-  adminAddPengurus,
   adminApproveSK,
   adminGetSK,
-  adminListJabatan,
   adminRemovePengurus,
   adminSetSKStatus,
 } from '../api/kepengurusanService';
+import PromotePengurusWizard from '../components/PromotePengurusWizard';
 import { canAjukanSK, canFinalizeSK, canForwardSK, canManagePengurusForLevel } from '../roles';
-import type { Jabatan, SKApprovalAction, SKDetail, SKStatus } from '../types';
+import type { SKApprovalAction, SKDetail, SKListItem, SKStatus } from '../types';
 
 const APPROVAL_LABEL: Record<string, string> = {
   DRAFT: 'Draf',
@@ -39,27 +36,19 @@ export default function SkDetailPage() {
   const { user } = useAuth();
 
   const [detail, setDetail] = useState<SKDetail | null>(null);
-  const [jabatan, setJabatan] = useState<Jabatan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aksiError, setAksiError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
   const [catatan, setCatatan] = useState('');
-  const [cariAnggota, setCariAnggota] = useState('');
-  const [hasilAnggota, setHasilAnggota] = useState<AnggotaDetail[]>([]);
-  const [anggotaTerpilih, setAnggotaTerpilih] = useState<AnggotaDetail | null>(null);
-  const [jabatanTerpilih, setJabatanTerpilih] = useState('');
-  const [konfirmasi, setKonfirmasi] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
 
   const load = useCallback(async () => {
     if (!skId) return;
     setLoading(true);
     setError(null);
     try {
-      const [d, j] = await Promise.all([adminGetSK(skId), adminListJabatan(false)]);
-      setDetail(d);
-      setJabatan(j);
+      setDetail(await adminGetSK(skId));
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal memuat detail SK');
     } finally {
@@ -113,46 +102,6 @@ export default function SkDetailPage() {
     }
   }
 
-  async function cariAnggotaSubmit(): Promise<void> {
-    setAksiError(null);
-    try {
-      const res = await adminListAnggota({ page: 1, limit: 8, search: cariAnggota.trim() || undefined, status: 'AKTIF' });
-      setHasilAnggota(res.data);
-    } catch (e: unknown) {
-      setAksiError(e instanceof ApiError ? e.message : 'Gagal mencari anggota');
-    }
-  }
-
-  async function tambahPengurus(): Promise<void> {
-    setAksiError(null);
-    if (!anggotaTerpilih) {
-      setAksiError('Pilih anggota terlebih dahulu.');
-      return;
-    }
-    if (!jabatanTerpilih) {
-      setAksiError('Pilih jabatan terlebih dahulu.');
-      return;
-    }
-    if (!konfirmasi) {
-      setAksiError('Centang konfirmasi kelayakan.');
-      return;
-    }
-    setBusy(true);
-    try {
-      await adminAddPengurus(skId, anggotaTerpilih.id, Number(jabatanTerpilih), true);
-      setAnggotaTerpilih(null);
-      setCariAnggota('');
-      setHasilAnggota([]);
-      setJabatanTerpilih('');
-      setKonfirmasi(false);
-      await load();
-    } catch (e: unknown) {
-      setAksiError(e instanceof ApiError ? e.message : 'Gagal menambahkan pengurus');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function lepas(pengurusId: number): Promise<void> {
     if (!window.confirm('Lepas pengurus ini dari SK?')) return;
     setAksiError(null);
@@ -174,7 +123,13 @@ export default function SkDetailPage() {
   const final = sk.approval_status === 'DISETUJUI';
   const dapatAjukan = canAjukanSK(user?.role, sk.level);
   const dapatTambah = canManagePengurusForLevel(user?.role, sk.level) && sk.status === 'Aktif' && !final;
-  const jabatanSesuai = jabatan.filter((j) => j.level === sk.level);
+  const presetSK: SKListItem = {
+    id: sk.id, nomor_sk: sk.nomor_sk, judul: sk.judul, level: sk.level,
+    provinsi_id: sk.provinsi_id, kabupaten_id: sk.kabupaten_id,
+    status: sk.status, approval_status: sk.approval_status,
+    tanggal_terbit: sk.tanggal_terbit, tanggal_berakhir: sk.tanggal_berakhir,
+    jumlah_pengurus: pengurus.length, created_at: sk.created_at,
+  };
 
   return (
     <div>
@@ -186,6 +141,13 @@ export default function SkDetailPage() {
       {sk.catatan_penolakan && (
         <div className="mb-4"><Alert kind="warning">Catatan penolakan: {sk.catatan_penolakan}</Alert></div>
       )}
+
+      <div className="mb-5">
+        <Alert kind="info">
+          Alur: <b>Buat SK (Draf)</b> → <b>Susun Pengurus</b> → <b>Ajukan</b> → Provinsi teruskan → Nasional sahkan (final &amp; terkunci).
+          Susun pengurus <b>sebelum</b> SK disahkan. Mengajukan &amp; menyetujui SK baru otomatis menonaktifkan SK lama selevel+wilayah beserta pengurusnya (<b>Single Active SK</b>).
+        </Alert>
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -208,7 +170,12 @@ export default function SkDetailPage() {
           <p className="mt-1 text-xs text-kipan-text-muted">Buat (DRAF) → Ajukan → Provinsi teruskan → Nasional sahkan (final &amp; terkunci).</p>
           <div className="mt-3 space-y-3">
             {dapatAjukan && sk.approval_status === 'DRAFT' && (
-              <Button variant="primary" onClick={() => void setujui('AJUKAN')} disabled={busy}>Ajukan SK</Button>
+              <Button variant="primary" onClick={() => void setujui('AJUKAN')} disabled={busy || pengurus.length === 0}>
+                Ajukan SK
+              </Button>
+            )}
+            {dapatAjukan && sk.approval_status === 'DRAFT' && pengurus.length === 0 && (
+              <p className="text-xs text-amber-600">Tambahkan minimal satu pengurus sebelum mengajukan SK.</p>
             )}
             {canForwardSK(user?.role) && sk.approval_status === 'MENUNGGU_PROVINSI' && (
               <Button variant="primary" onClick={() => void setujui('TERUSKAN')} disabled={busy}>Teruskan ke Nasional</Button>
@@ -234,9 +201,17 @@ export default function SkDetailPage() {
 
       <div className="mt-6">
         <Card>
-          <p className="text-base font-bold text-kipan-text-dark">Susunan Pengurus</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-base font-bold text-kipan-text-dark">Susunan Pengurus ({pengurus.length})</p>
+            {dapatTambah && (
+              <Button variant="primary" onClick={() => setShowWizard(true)}>+ Angkat Pengurus ke SK ini</Button>
+            )}
+          </div>
+
           {pengurus.length === 0 ? (
-            <p className="mt-3 text-sm text-kipan-text-muted">Belum ada pengurus pada SK ini.</p>
+            <p className="mt-3 text-sm text-kipan-text-muted">
+              Belum ada pengurus pada SK ini. {dapatTambah ? 'Gunakan tombol "Angkat Pengurus" untuk menyusun kepengurusan sebelum SK diajukan.' : ''}
+            </p>
           ) : (
             <div className="mt-3 overflow-hidden rounded-xl border border-kipan-border">
               <table className="w-full text-left text-sm">
@@ -268,62 +243,19 @@ export default function SkDetailPage() {
             </div>
           )}
 
-          {dapatTambah && (
-            <div className="mt-5 rounded-xl border border-kipan-border bg-kipan-soft-gray p-4">
-              <p className="text-sm font-bold text-kipan-text-dark">Tambah Pengurus (Angkat Kader)</p>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <Field label="Jabatan" required>
-                  <SelectInput
-                    value={jabatanTerpilih}
-                    onChange={setJabatanTerpilih}
-                    placeholder="Pilih jabatan"
-                    id="add-jabatan"
-                    options={jabatanSesuai.map((j) => ({ value: String(j.id), label: `${j.nama}${j.is_inti ? ' (inti)' : ''}` }))}
-                  />
-                </Field>
-                <Field label="Cari Anggota (nama / NIA)" required hint="Hanya anggota AKTIF di wilayah SK">
-                  <div className="flex gap-2">
-                    <input
-                      value={cariAnggota}
-                      onChange={(e) => setCariAnggota(e.target.value)}
-                      placeholder="Ketik nama atau NIA"
-                      className="w-full rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
-                    />
-                    <Button variant="primary" onClick={() => void cariAnggotaSubmit()}>Cari</Button>
-                  </div>
-                </Field>
-              </div>
-
-              {hasilAnggota.length > 0 && (
-                <div className="mt-3 max-h-48 overflow-auto rounded-lg border border-kipan-border bg-white">
-                  {hasilAnggota.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => setAnggotaTerpilih(a)}
-                      className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-kipan-soft-blue ${anggotaTerpilih?.id === a.id ? 'bg-kipan-soft-blue font-semibold' : ''}`}
-                    >
-                      <span>{a.nama_lengkap}</span>
-                      <span className="font-mono text-xs text-kipan-text-muted">{a.nia}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {anggotaTerpilih && <p className="mt-2 text-xs font-semibold text-kipan-green">Terpilih: {anggotaTerpilih.nama_lengkap} ({anggotaTerpilih.nia})</p>}
-
-              <label className="mt-3 flex items-start gap-2 text-sm text-kipan-text-dark">
-                <input type="checkbox" checked={konfirmasi} onChange={(e) => setKonfirmasi(e.target.checked)} className="mt-0.5 h-4 w-4 accent-kipan-navy" />
-                Saya mengonfirmasi kader ini layak diangkat (penilaian kelayakan dilakukan di luar sistem).
-              </label>
-              <div className="mt-3">
-                <Button variant="accent" onClick={() => void tambahPengurus()} disabled={busy}>
-                  {busy ? <span className="inline-flex items-center gap-2"><Spinner size={15} /> Memproses...</span> : 'Angkat sebagai Pengurus'}
-                </Button>
-              </div>
-            </div>
+          {!final && sk.status === 'Aktif' && !dapatTambah && (
+            <p className="mt-3 text-xs text-kipan-text-muted">Anda tidak berwenang menyusun pengurus pada SK level ini.</p>
           )}
         </Card>
       </div>
+
+      <PromotePengurusWizard
+        open={showWizard}
+        onClose={() => setShowWizard(false)}
+        onDone={load}
+        actorRole={user?.role}
+        presetSK={presetSK}
+      />
 
       {busy && <Overlay label="Memproses..." />}
     </div>

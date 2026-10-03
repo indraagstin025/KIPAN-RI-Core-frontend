@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import Button from '@/components/ui/button';
 import { Card, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
 import { Spinner } from '@/components/ui/loading';
+import { useAuth } from '@/context/AuthContext';
+import PromotePengurusWizard from '@/features/kepengurusan/components/PromotePengurusWizard';
+import { canPromotePengurus } from '@/features/kepengurusan/roles';
 import { presignView } from '@/features/storage/api/storageService';
 import { ApiError } from '@/services/apiClient';
 import { adminGetAnggota, adminKtaUrl, resetMemberPassword } from '../api/anggotaService';
@@ -18,12 +22,14 @@ const DOC_FIELDS: Array<{ field: keyof AnggotaDetail; label: string }> = [
 
 export default function AnggotaDetailPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [item, setItem] = useState<AnggotaDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [otp, setOtp] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
   const [unduh, setUnduh] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -85,7 +91,18 @@ export default function AnggotaDetailPage() {
 
   return (
     <div>
-      <PageHeader title={item.nama_lengkap} desc={`${item.nia} · ${item.tipe}`} action={<StatusBadge status={item.status} />} />
+      <PageHeader
+        title={item.nama_lengkap}
+        desc={`${item.nia} · ${item.tipe}`}
+        action={(
+          <div className="flex items-center gap-3">
+            <StatusBadge status={item.status} />
+            {item.tipe === 'KADER' && canPromotePengurus(user?.role) && (
+              <Button variant="primary" onClick={() => setShowWizard(true)}>Jadikan Pengurus</Button>
+            )}
+          </div>
+        )}
+      />
       <div className="mb-4">
         <Link to="/admin/anggota" className="text-sm font-semibold text-kipan-blue hover:underline">← Kembali ke data anggota</Link>
       </div>
@@ -155,6 +172,14 @@ export default function AnggotaDetailPage() {
           </ul>
         </Card>
       </div>
+
+      <PromotePengurusWizard
+        open={showWizard}
+        onClose={() => setShowWizard(false)}
+        onDone={() => { setShowWizard(false); void load(); }}
+        actorRole={user?.role}
+        presetAnggota={item}
+      />
     </div>
   );
 }

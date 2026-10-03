@@ -181,7 +181,8 @@ export default function SkListPage() {
           <p className="mb-2 text-base font-bold text-kipan-text-dark">Buat Surat Keputusan</p>
           <div className="mb-4">
             <Alert kind="warning">
-              Penting (Aturan SK Tunggal): mengajukan &amp; menyetujui SK baru otomatis menonaktifkan SK lama selevel &amp; wilayah beserta pengurusnya (Demisioner).
+              Alur SK: <b>Buat (Draf)</b> → <b>Susun Pengurus</b> → <b>Ajukan</b> → sahkan (final &amp; terkunci). Aturan SK Tunggal:
+              mengajukan &amp; menyetujui SK baru otomatis menonaktifkan SK lama selevel &amp; wilayah beserta pengurusnya (Demisioner).
             </Alert>
           </div>
           {formError && <div className="mb-4"><Alert kind="error">{formError}</Alert></div>}
