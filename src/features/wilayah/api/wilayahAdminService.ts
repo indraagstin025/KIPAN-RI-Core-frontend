@@ -1,4 +1,4 @@
-import { apiFetch } from '@/services/apiClient';
+import { apiFetch, apiFetchPaginated, type Paginated } from '@/services/apiClient';
 import type { WilayahAdminItem, WilayahCards, WilayahDetail, WilayahType } from '../types';
 
 interface ListQuery {
@@ -6,19 +6,23 @@ interface ListQuery {
   search?: string;
   status?: string;
   provinsi_id?: number;
+  page?: number;
+  limit?: number;
 }
 
 export function wilayahCards(): Promise<WilayahCards> {
   return apiFetch<WilayahCards>('/admin/wilayah/cards');
 }
 
-export function wilayahList(q: ListQuery): Promise<WilayahAdminItem[]> {
+export function wilayahList(q: ListQuery): Promise<Paginated<WilayahAdminItem[]>> {
   const p = new URLSearchParams();
   p.set('type', q.type);
+  p.set('page', String(q.page ?? 1));
+  p.set('limit', String(q.limit ?? 25));
   if (q.search) p.set('search', q.search);
   if (q.status) p.set('status', q.status);
   if (q.provinsi_id) p.set('provinsi_id', String(q.provinsi_id));
-  return apiFetch<WilayahAdminItem[]>(`/admin/wilayah?${p.toString()}`);
+  return apiFetchPaginated<WilayahAdminItem[]>(`/admin/wilayah?${p.toString()}`);
 }
 
 export function wilayahDetail(type: WilayahType, id: number): Promise<WilayahDetail> {
