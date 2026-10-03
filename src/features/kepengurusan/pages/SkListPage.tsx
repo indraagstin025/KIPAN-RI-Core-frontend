@@ -5,13 +5,21 @@ import { Alert, Field, SelectInput, TextInput } from '@/components/ui/fields';
 import { Overlay, Spinner } from '@/components/ui/loading';
 import { ErrorBox, Loading, PageHeader, Pagination, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
+import { adminListAnggota } from '@/features/anggota/api/anggotaService';
 import { useDebouncedValue } from '@/hooks/useDebounced';
 import { useWilayah } from '@/features/pendaftaran/hooks/useWilayah';
 import { uploadDokumen } from '@/features/storage/api/storageService';
 import { ApiError } from '@/services/apiClient';
-import { adminCreateSK, adminListSK } from '../api/kepengurusanService';
+import { adminAddPengurus, adminCreateSK, adminListJabatan, adminListPromosi, adminListSK } from '../api/kepengurusanService';
 import { canCreateSK } from '../roles';
-import type { SKListItem } from '../types';
+import type { Jabatan, SKListItem } from '../types';
+
+interface KaderPick {
+  id: number;
+  nama_lengkap: string;
+  nia: string;
+  info?: string;
+}
 
 const LEVELS = ['', 'NASIONAL', 'PROVINSI', 'KABUPATEN'];
 const SK_STATUSES = ['', 'Aktif', 'TidakAktif', 'Digantikan'];
@@ -72,6 +80,21 @@ export default function SkListPage() {
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Langkah "Kader yang diangkat" (dalam form Buat SK).
+  const [jabatanList, setJabatanList] = useState<Jabatan[]>([]);
+  const [fJabatanId, setFJabatanId] = useState('');
+  const [fTanggalMulai, setFTanggalMulai] = useState('');
+  const [fAnggotaSearch, setFAnggotaSearch] = useState('');
+  const fDebouncedSearch = useDebouncedValue(fAnggotaSearch, 300);
+  const [fMode, setFMode] = useState<'anggota' | 'promosi'>('anggota');
+  const [fHasilAnggota, setFHasilAnggota] = useState<KaderPick[]>([]);
+  const [fLoadingAnggota, setFLoadingAnggota] = useState(false);
+  const [fAnggotaTerpilih, setFAnggotaTerpilih] = useState<KaderPick | null>(null);
+  const [fKonfirmasi, setFKonfirmasi] = useState(false);
+
+  // Level efektif SK (mengikuti role; Super/Nasional dari pilihan form).
+  const effLevel = isNational ? fLevel : (user?.role === 'ADMIN_PROVINSI' ? 'PROVINSI' : 'KABUPATEN');
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -97,6 +120,44 @@ export default function SkListPage() {
     void load();
   }, [load]);
 
+  // Muat jabatan sesuai level efektif saat form dibuka / level berubah.
+  useEffect(() => {
+    if (!showForm) return;
+    const lvl = isNational ? fLevel : (user?.role === 'ADMIN_PROVINSI' ? 'PROVINSI' : 'KABUPATEN');
+    if (!lvl) {
+      setJabatanList([]);
+      return;
+    }
+    adminListJabatan(false, lvl).then(setJabatanList).catch(() => setJabatanList([]));
+  }, [showForm, fLevel, isNational, user?.role]);
+
+  // Cari kader: mode "Dari Anggota (Baru)" atau "Promosi Pengurus".
+  useEffect(() => {
+    if (!showForm) return;
+    const q = fDebouncedSearch.trim();
+    if (q.length < 2) {
+      setFHasilAnggota([]);
+      return;
+    }
+    setFLoadingAnggota(true);
+    const finish = (p: Promise<KaderPick[]>): void => {
+      p.then(setFHasilAnggota).catch(() => setFHasilAnggota([])).finally(() => setFLoadingAnggota(false));
+    };
+    if (fMode === 'anggota') {
+      void finish(
+        adminListAnggota({ page: 1, limit: 8, search: q, status: 'AKTIF' })
+          .then((r) => r.data.map((a) => ({ id: a.id, nama_lengkap: a.nama_lengkap, nia: a.nia }))),
+      );
+    } else {
+      void finish(
+        adminListPromosi(q).then((r) => r.map((c) => ({
+          id: c.anggota_id, nama_lengkap: c.nama_lengkap, nia: c.nia,
+          info: `${c.status} · ${c.jabatan} (${c.level})`,
+        }))),
+      );
+    }
+  }, [showForm, fDebouncedSearch, fMode]);
+
   function resetForm(): void {
     setNomor('');
     setJudul('');
@@ -107,6 +168,14 @@ export default function SkListPage() {
     setBerakhir('');
     setFile(null);
     setFormError(null);
+    setJabatanList([]);
+    setFJabatanId('');
+    setFTanggalMulai('');
+    setFAnggotaSearch('');
+    setFMode('anggota');
+    setFHasilAnggota([]);
+    setFAnggotaTerpilih(null);
+    setFKonfirmasi(false);
   }
 
   function ubahProvinsi(v: string): void {
@@ -140,10 +209,22 @@ export default function SkListPage() {
         return;
       }
     }
+    if (!fJabatanId) {
+      setFormError('Pilih jabatan kader yang akan diangkat.');
+      return;
+    }
+    if (!fAnggotaTerpilih) {
+      setFormError('Pilih kader yang akan diangkat.');
+      return;
+    }
+    if (!fKonfirmasi) {
+      setFormError('Centang konfirmasi kelayakan kader.');
+      return;
+    }
     setBusy(true);
     try {
       const key = await uploadDokumen('sk', file);
-      await adminCreateSK({
+      const sk = await adminCreateSK({
         nomor_sk: nomor.trim(),
         judul: judul.trim(),
         level: isNational ? fLevel : undefined,
@@ -153,6 +234,13 @@ export default function SkListPage() {
         tanggal_berakhir: new Date(`${berakhir}T00:00:00Z`).toISOString(),
         file_sk_key: key,
       });
+      await adminAddPengurus(
+        sk.id,
+        fAnggotaTerpilih.id,
+        Number(fJabatanId),
+        true,
+        fTanggalMulai ? new Date(`${fTanggalMulai}T00:00:00Z`).toISOString() : undefined,
+      );
       setShowForm(false);
       resetForm();
       setPage(1);
@@ -195,7 +283,7 @@ export default function SkListPage() {
                 type="date"
                 id="sk-tanggal"
                 value={tanggal}
-                onChange={(e) => setTanggal(e.target.value)}
+                onChange={(e) => { setTanggal(e.target.value); if (!fTanggalMulai) setFTanggalMulai(e.target.value); }}
                 className="w-full rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
               />
             </Field>
@@ -258,6 +346,55 @@ export default function SkListPage() {
                   className="block w-full text-sm text-kipan-text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-kipan-navy file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-kipan-blue"
                 />
               </Field>
+            </div>
+
+            <div className="sm:col-span-2 mt-2 rounded-xl border border-kipan-border bg-kipan-soft-gray p-4">
+              <p className="text-sm font-bold text-kipan-text-dark">Kader yang diangkat</p>
+              <p className="mt-1 text-xs text-kipan-text-muted">
+                Pilih kader + jabatan. SK tersimpan sebagai <b>Draf</b> &amp; kader langsung diangkat; ajukan SK dari halaman detail.
+              </p>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <Field label="Jabatan" required hint={`Level ${effLevel || '-'}`}>
+                  <SelectInput value={fJabatanId} onChange={setFJabatanId} placeholder="Pilih jabatan" id="sk-jabatan" options={jabatanList.map((j) => ({ value: String(j.id), label: `${j.nama}${j.is_inti ? ' (inti)' : ''}` }))} />
+                </Field>
+                <Field label="Tanggal Mulai Jabatan" required>
+                  <input type="date" id="sk-mulai" value={fTanggalMulai} onChange={(e) => setFTanggalMulai(e.target.value)} className="w-full rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20" />
+                </Field>
+                <div className="sm:col-span-2">
+                  <div className="mb-2 flex rounded-lg bg-white p-1 text-xs font-semibold">
+                    <button type="button" onClick={() => setFMode('anggota')} className={`flex-1 rounded-md py-1.5 ${fMode === 'anggota' ? 'bg-kipan-navy text-white' : 'text-kipan-text-muted hover:bg-kipan-soft-blue'}`}>Dari Anggota (Baru)</button>
+                    <button type="button" onClick={() => setFMode('promosi')} className={`flex-1 rounded-md py-1.5 ${fMode === 'promosi' ? 'bg-kipan-navy text-white' : 'text-kipan-text-muted hover:bg-kipan-soft-blue'}`}>Promosi Pengurus</button>
+                  </div>
+                  <Field label="Cari Kader (nama / NIA)" required hint={fMode === 'anggota' ? 'Hanya anggota AKTIF di wilayah SK' : 'Anggota ber-riwayat pengurus yang tidak sedang aktif'}>
+                    <TextInput value={fAnggotaSearch} onChange={setFAnggotaSearch} placeholder="Ketik minimal 2 karakter" id="sk-cari-kader" />
+                  </Field>
+                  {fLoadingAnggota ? (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-kipan-text-muted"><Spinner size={15} /> Mencari...</div>
+                  ) : fHasilAnggota.length > 0 ? (
+                    <div className="mt-2 max-h-48 overflow-auto rounded-lg border border-kipan-border bg-white">
+                      {fHasilAnggota.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => setFAnggotaTerpilih(a)}
+                          className={`flex w-full flex-col items-start px-4 py-2.5 text-left text-sm hover:bg-kipan-soft-blue ${fAnggotaTerpilih?.id === a.id ? 'bg-kipan-soft-blue font-semibold' : ''}`}
+                        >
+                          <span className="flex w-full items-center justify-between">
+                            <span>{a.nama_lengkap}</span>
+                            <span className="font-mono text-xs text-kipan-text-muted">{a.nia}</span>
+                          </span>
+                          {a.info && <span className="text-[10px] font-semibold text-amber-600">{a.info}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {fAnggotaTerpilih && <p className="mt-2 text-xs font-semibold text-kipan-green">Terpilih: {fAnggotaTerpilih.nama_lengkap} ({fAnggotaTerpilih.nia})</p>}
+                </div>
+              </div>
+              <label className="mt-3 flex items-start gap-2 text-sm text-kipan-text-dark">
+                <input type="checkbox" checked={fKonfirmasi} onChange={(e) => setFKonfirmasi(e.target.checked)} className="mt-0.5 h-4 w-4 accent-kipan-navy" />
+                Saya mengonfirmasi kader ini layak diangkat (penilaian kelayakan di luar sistem).
+              </label>
             </div>
           </div>
           <div className="mt-4">
@@ -331,7 +468,7 @@ export default function SkListPage() {
         </div>
       )}
       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-      {busy && <Overlay label="Mengunggah & menyimpan SK..." />}
+      {busy && <Overlay label="Mengunggah, menyimpan SK & mengangkat kader..." />}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import type {
   PengurusQuery,
   PengurusStats,
   PengurusStatus,
+  PromosiCandidate,
   SKApprovalAction,
   SKCreateInput,
   SKDetail,
@@ -61,18 +62,21 @@ export function adminApproveSK(id: number, action: SKApprovalAction, catatan = '
   return apiFetch<void>(`/admin/sk/${id}/approve`, { method: 'POST', data: { action, catatan } });
 }
 
-export function adminSetSKStatus(id: number, status: SKStatus): Promise<void> {
-  return apiFetch<void>(`/admin/sk/${id}/status`, { method: 'POST', data: { status } });
+export function adminSetSKStatus(id: number, status: SKStatus, statusPengurus?: string, keterangan?: string): Promise<void> {
+  return apiFetch<void>(`/admin/sk/${id}/status`, {
+    method: 'POST',
+    data: { status, status_pengurus: statusPengurus, keterangan },
+  });
 }
 
 // ============================================================
 // PENGURUS
 // ============================================================
 
-export function adminAddPengurus(skId: number, anggotaId: number, jabatanId: number, konfirmasi: boolean): Promise<PengurusDetail> {
+export function adminAddPengurus(skId: number, anggotaId: number, jabatanId: number, konfirmasi: boolean, tanggalMulai?: string): Promise<PengurusDetail> {
   return apiFetch<PengurusDetail>(`/admin/sk/${skId}/pengurus`, {
     method: 'POST',
-    data: { anggota_id: anggotaId, jabatan_id: jabatanId, konfirmasi },
+    data: { anggota_id: anggotaId, jabatan_id: jabatanId, konfirmasi, tanggal_mulai: tanggalMulai },
   });
 }
 
@@ -95,6 +99,13 @@ export function adminListPengurus(q: PengurusQuery): Promise<Paginated<PengurusD
 
 export function adminPengurusStats(): Promise<PengurusStats> {
   return apiFetch<PengurusStats>('/admin/pengurus/stats');
+}
+
+export function adminListPromosi(search: string, limit = 20): Promise<PromosiCandidate[]> {
+  const p = new URLSearchParams();
+  p.set('limit', String(limit));
+  if (search) p.set('search', search);
+  return apiFetch<PromosiCandidate[]>(`/admin/pengurus/promosi?${p.toString()}`);
 }
 
 export function adminUpdatePengurusStatus(id: number, status: PengurusStatus, keterangan = ''): Promise<void> {

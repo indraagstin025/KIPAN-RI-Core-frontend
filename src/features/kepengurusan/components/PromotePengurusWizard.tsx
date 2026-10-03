@@ -64,6 +64,7 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
   const [takenInti, setTakenInti] = useState<Set<number>>(new Set());
   const [loadingJabatan, setLoadingJabatan] = useState(false);
   const [jabatanId, setJabatanId] = useState('');
+  const [tanggalMulai, setTanggalMulai] = useState('');
   const [konfirmasi, setKonfirmasi] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -97,6 +98,7 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
     if (!open || !sk) return;
     setLoadingJabatan(true);
     setJabatanId('');
+    setTanggalMulai(sk.tanggal_terbit ? sk.tanggal_terbit.slice(0, 10) : '');
     Promise.all([adminListJabatan(false, sk.level), adminGetSK(sk.id)])
       .then(([js, detail]) => {
         setJabatanList(js.filter((j) => j.is_active));
@@ -147,7 +149,8 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
     setSubmitting(true);
     setError(null);
     try {
-      await adminAddPengurus(sk.id, anggota.id, Number(jabatanId), true);
+      const mulai = tanggalMulai ? new Date(`${tanggalMulai}T00:00:00Z`).toISOString() : undefined;
+      await adminAddPengurus(sk.id, anggota.id, Number(jabatanId), true, mulai);
       setSuccess(true);
       onDone();
     } catch (e: unknown) {
@@ -280,6 +283,16 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
                 <div className="flex justify-between gap-3"><dt className="text-kipan-text-muted">Anggota</dt><dd className="font-semibold">{anggota.nama_lengkap} ({anggota.nia})</dd></div>
                 <div className="flex justify-between gap-3"><dt className="text-kipan-text-muted">Jabatan</dt><dd className="font-semibold">{jabatanTerpilih.nama}{jabatanTerpilih.is_inti ? ' (inti)' : ''}</dd></div>
               </dl>
+              <div>
+                <label htmlFor="pw-mulai" className="block text-sm font-semibold text-kipan-text-dark">Tanggal Mulai Jabatan</label>
+                <input
+                  type="date"
+                  id="pw-mulai"
+                  value={tanggalMulai}
+                  onChange={(e) => setTanggalMulai(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
+                />
+              </div>
               <Alert kind="info">
                 Saat disimpan: tipe akun anggota berubah <b>KADER → PENGURUS</b>, seluruh sesi login-nya <b>dicabut</b>, dan email
                 notifikasi dikirim. Bila anggota ini sedang menjabat aktif di SK lain, jabatan lamanya otomatis menjadi <b>Demisioner</b>.

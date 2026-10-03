@@ -103,6 +103,19 @@ export interface PengurusStats {
   akan_berakhir: number;
 }
 
+export interface PromosiCandidate {
+  anggota_id: number;
+  nia: string;
+  nama_lengkap: string;
+  provinsi_id: number;
+  kabupaten_id: number;
+  provinsi_nama?: string;
+  kabupaten_nama?: string;
+  jabatan: string;
+  level: string;
+  status: string;
+}
+
 export interface SKDetail {
   sk: SuratKeputusan;
   pengurus: PengurusDetail[];

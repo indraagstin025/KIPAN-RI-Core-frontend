@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Button from '@/components/ui/button';
-import { Alert, Field, TextInput } from '@/components/ui/fields';
+import { Alert, Field, SelectInput, TextInput } from '@/components/ui/fields';
 import { Overlay } from '@/components/ui/loading';
+import { Modal } from '@/components/ui/modal';
 import { Card, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
 import { presignView } from '@/features/storage/api/storageService';
@@ -42,6 +43,9 @@ export default function SkDetailPage() {
   const [busy, setBusy] = useState(false);
   const [catatan, setCatatan] = useState('');
   const [showWizard, setShowWizard] = useState(false);
+  const [showNonaktif, setShowNonaktif] = useState(false);
+  const [nonaktifStatus, setNonaktifStatus] = useState<'Demisioner' | 'Diberhentikan'>('Demisioner');
+  const [nonaktifKeterangan, setNonaktifKeterangan] = useState('');
 
   const load = useCallback(async () => {
     if (!skId) return;
@@ -97,6 +101,25 @@ export default function SkDetailPage() {
       await load();
     } catch (e: unknown) {
       setAksiError(e instanceof ApiError ? e.message : 'Gagal mengubah status SK');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function konfirmasiNonaktif(): Promise<void> {
+    setAksiError(null);
+    if (!nonaktifKeterangan.trim()) {
+      setAksiError('Keterangan wajib diisi untuk menonaktifkan SK.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await adminSetSKStatus(skId, 'TidakAktif', nonaktifStatus, nonaktifKeterangan.trim());
+      setShowNonaktif(false);
+      setNonaktifKeterangan('');
+      await load();
+    } catch (e: unknown) {
+      setAksiError(e instanceof ApiError ? e.message : 'Gagal menonaktifkan SK');
     } finally {
       setBusy(false);
     }
@@ -160,7 +183,7 @@ export default function SkDetailPage() {
           </dl>
           <div className="mt-4 flex flex-wrap gap-3">
             {sk.status === 'Aktif'
-              ? <Button variant="ghost" onClick={() => void ubahStatusSK('TidakAktif')}>Nonaktifkan SK</Button>
+              ? <Button variant="ghost" onClick={() => { setAksiError(null); setNonaktifStatus('Demisioner'); setNonaktifKeterangan(''); setShowNonaktif(true); }}>Nonaktifkan SK</Button>
               : <Button variant="ghost" onClick={() => void ubahStatusSK('Aktif')}>Aktifkan SK</Button>}
           </div>
         </Card>
@@ -256,6 +279,31 @@ export default function SkDetailPage() {
         actorRole={user?.role}
         presetSK={presetSK}
       />
+
+      {showNonaktif && (
+        <Modal title={`Nonaktifkan SK ${sk.nomor_sk}`} onClose={() => setShowNonaktif(false)}>
+          {aksiError && <div className="mb-3"><Alert kind="error">{aksiError}</Alert></div>}
+          <p className="mb-3 text-sm text-kipan-text-muted">Seluruh pengurus aktif pada SK ini akan didemosi otomatis.</p>
+          <div className="grid gap-4">
+            <Field label="Status Akhir Pengurus" required>
+              <SelectInput
+                value={nonaktifStatus}
+                onChange={(v) => setNonaktifStatus(v as 'Demisioner' | 'Diberhentikan')}
+                placeholder="Pilih status"
+                id="sk-nonaktif-status"
+                options={[{ value: 'Demisioner', label: 'Demisioner' }, { value: 'Diberhentikan', label: 'Diberhentikan' }]}
+              />
+            </Field>
+            <Field label="Keterangan / Alasan" required>
+              <TextInput value={nonaktifKeterangan} onChange={setNonaktifKeterangan} placeholder="Mis. masa jabatan selesai" id="sk-nonaktif-ket" />
+            </Field>
+          </div>
+          <div className="mt-4 flex gap-3">
+            <Button variant="accent" onClick={() => void konfirmasiNonaktif()} disabled={busy}>Nonaktifkan</Button>
+            <Button variant="ghost" onClick={() => setShowNonaktif(false)}>Batal</Button>
+          </div>
+        </Modal>
+      )}
 
       {busy && <Overlay label="Memproses..." />}
     </div>
