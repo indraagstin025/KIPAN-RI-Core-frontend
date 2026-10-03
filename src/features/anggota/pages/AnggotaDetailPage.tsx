@@ -16,7 +16,6 @@ const DOC_FIELDS: Array<{ field: keyof AnggotaDetail; label: string }> = [
   { field: 'foto_key', label: 'Pas Foto' },
   { field: 'ktp_key', label: 'KTP' },
   { field: 'cv_key', label: 'CV / Resume' },
-  { field: 'sk_key', label: 'Surat Keputusan (SK)' },
   { field: 'surat_pernyataan_key', label: 'Surat Pernyataan' },
   { field: 'surat_sehat_key', label: 'Surat Sehat' },
 ];
