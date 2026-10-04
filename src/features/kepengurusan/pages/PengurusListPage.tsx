@@ -357,7 +357,7 @@ export default function PengurusListPage() {
                   <tr key={p.id} className="border-t border-kipan-border align-top hover:bg-kipan-soft-gray/60">
                     <td className="px-4 py-3 text-kipan-text-muted">{(page - 1) * 10 + idx + 1}</td>
                     <td className="px-4 py-3">
-                      <Link to={`/admin/pengurus/${p.id}`} className="font-semibold text-kipan-text-dark hover:text-kipan-blue hover:underline">{p.nama_lengkap}</Link>
+                      <div className="font-semibold text-kipan-text-dark">{p.nama_lengkap}</div>
                       <div className="font-mono text-xs text-kipan-navy">{p.nia}</div>
                       {editing === p.id && (
                         <div className="mt-2 space-y-2">
@@ -402,19 +402,22 @@ export default function PengurusListPage() {
                     <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
                     <td className={`px-4 py-3 text-xs font-semibold ${mj.cls}`}>{mj.text}</td>
                     <td className="px-4 py-3 text-right">
-                      {canManagePengurusForLevel(user?.role, p.level) &&
-                        editing !== p.id && editingJabatan !== p.id && pawId !== p.id && mutasiId !== p.id && (
-                        <div className="flex flex-col items-end gap-1">
-                          <button type="button" onClick={() => mulaiUbah(p)} className="font-semibold text-kipan-blue hover:underline">Ubah Status</button>
-                          <button type="button" onClick={() => mulaiGantiJabatan(p)} className="font-semibold text-kipan-blue hover:underline">Ganti Jabatan</button>
-                          {p.status === 'Aktif' && (
-                            <>
-                              <button type="button" onClick={() => mulaiPaw(p)} className="font-semibold text-kipan-red hover:underline">PAW</button>
-                              <button type="button" onClick={() => mulaiMutasi(p)} className="font-semibold text-kipan-blue hover:underline">Mutasi</button>
-                            </>
-                          )}
-                        </div>
-                      )}
+                      <div className="flex flex-col items-end gap-1">
+                        <Link to={`/admin/pengurus/${p.id}`} className="font-semibold text-kipan-blue hover:underline">Detail →</Link>
+                        {canManagePengurusForLevel(user?.role, p.level) &&
+                          editing !== p.id && editingJabatan !== p.id && pawId !== p.id && mutasiId !== p.id && (
+                          <>
+                            <button type="button" onClick={() => mulaiUbah(p)} className="font-semibold text-kipan-blue hover:underline">Ubah Status</button>
+                            <button type="button" onClick={() => mulaiGantiJabatan(p)} className="font-semibold text-kipan-blue hover:underline">Ganti Jabatan</button>
+                            {p.status === 'Aktif' && (
+                              <>
+                                <button type="button" onClick={() => mulaiPaw(p)} className="font-semibold text-kipan-red hover:underline">PAW</button>
+                                <button type="button" onClick={() => mulaiMutasi(p)} className="font-semibold text-kipan-blue hover:underline">Mutasi</button>
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
                       {pawId === p.id && (
                         <div className="mt-2 space-y-2 text-left">
                           <p className="text-xs font-bold text-kipan-text-dark">Aksi PAW</p>

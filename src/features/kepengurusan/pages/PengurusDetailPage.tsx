@@ -399,11 +399,11 @@ export default function PengurusDetailPage() {
 
         {tab === 'riwayat' && (
           <Card>
-            {data && data.riwayat.length === 0 ? (
+            {(data?.riwayat ?? []).length === 0 ? (
               <p className="text-sm text-kipan-text-muted">Belum ada riwayat kepengurusan.</p>
             ) : (
               <ol className="space-y-4">
-                {data?.riwayat.map((r) => (
+                {(data?.riwayat ?? []).map((r) => (
                   <li key={r.id} className="flex items-start gap-3">
                     <span className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-violet-100" />
                     <div>
