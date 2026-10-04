@@ -5,6 +5,7 @@ import { Card, ErrorBox, Loading, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
 import PromotePengurusWizard from '@/features/kepengurusan/components/PromotePengurusWizard';
 import { canPromotePengurus } from '@/features/kepengurusan/roles';
+import KtaCardPreview from '@/features/kta/components/KtaCardPreview';
 import { presignView } from '@/features/storage/api/storageService';
 import type { ActivityLog } from '@/features/audit/types';
 import { ApiError } from '@/services/apiClient';
@@ -340,10 +341,26 @@ export default function AnggotaDetailPage() {
         )}
 
         {tab === 'kartu' && (
-          <Card>
-            <h2 className="text-sm font-bold uppercase tracking-wide text-kipan-text-muted">Kartu Anggota (KTA)</h2>
-            <p className="mt-3 text-sm text-kipan-text-muted">Preview kartu sedang disiapkan. Sementara, gunakan tombol <b>Unduh PDF KTA</b> di atas.</p>
-          </Card>
+          <div>
+            <KtaCardPreview
+              data={{
+                nia: item.nia,
+                namaLengkap: item.nama_lengkap,
+                status: item.status,
+                tipe: item.tipe,
+                jabatan: item.riwayat?.trim() || 'Anggota',
+                provinsiNama: item.provinsi_nama,
+                kabupatenNama: item.kabupaten_nama,
+                tanggalAngkat: item.tanggal_angkat,
+                email: item.email,
+                whatsapp: item.whatsapp,
+              }}
+              fotoUrl={fotoUrl}
+            />
+            <p className="mt-4 text-xs text-kipan-text-muted">
+              Untuk berkas resmi, gunakan tombol <b>Unduh PDF KTA</b> di atas.
+            </p>
+          </div>
         )}
       </div>
 
