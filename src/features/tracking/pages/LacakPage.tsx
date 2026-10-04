@@ -7,7 +7,7 @@ import { ErrorBox, StatusBadge } from '@/components/ui/stateful';
 import { ApiError } from '@/services/apiClient';
 import { getTracking } from '../api/trackingService';
 import { getRegistrations, removeRegistration, type RegistrationRecord } from '../lib/registrationHistory';
-import type { TrackingResult } from '../types';
+import { kredensialInfo, type TrackingResult } from '../types';
 
 export default function LacakPage() {
   const [params, setParams] = useSearchParams();
@@ -60,6 +60,8 @@ export default function LacakPage() {
     setRiwayat(getRegistrations());
   }
 
+  const kredensial = hasil ? kredensialInfo(hasil.kredensial_status ?? '', hasil.kredensial_email) : null;
+
   return (
     <LandingLayout>
       <section className="bg-kipan-soft-gray py-16 pt-32">
@@ -104,6 +106,12 @@ export default function LacakPage() {
                     <Link to={`/revisi?nomor=${encodeURIComponent(hasil.nomor_pendaftaran)}`} className="font-bold underline">
                       Ajukan revisi dokumen
                     </Link>
+                  </div>
+                )}
+                {hasil.status === 'DISETUJUI' && kredensial && (
+                  <div className={`mt-4 rounded-lg border p-3 text-xs ${kredensial.tone}`}>
+                    <p className="font-semibold">Akun anggota</p>
+                    <p className="mt-1">{kredensial.text}</p>
                   </div>
                 )}
               </div>
