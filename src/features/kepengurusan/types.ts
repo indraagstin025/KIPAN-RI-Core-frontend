@@ -1,3 +1,5 @@
+import type { AnggotaDetail } from '@/features/anggota/types';
+
 export type SKApprovalStatus =
   | 'DRAFT'
   | 'MENUNGGU_PROVINSI'
@@ -93,6 +95,12 @@ export interface PengurusDetail {
   tanggal_mulai: string;
   tanggal_selesai?: string;
   created_at: string;
+}
+
+export interface PengurusDetailResponse {
+  pengurus: PengurusDetail;
+  anggota?: AnggotaDetail;
+  riwayat: PengurusDetail[];
 }
 
 export type PengurusPAWAksi = 'DEMISIONER' | 'DIBERHENTIKAN' | 'MENGUNDURKAN_DIRI' | 'MENINGGAL';

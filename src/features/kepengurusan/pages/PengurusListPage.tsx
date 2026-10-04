@@ -357,7 +357,7 @@ export default function PengurusListPage() {
                   <tr key={p.id} className="border-t border-kipan-border align-top hover:bg-kipan-soft-gray/60">
                     <td className="px-4 py-3 text-kipan-text-muted">{(page - 1) * 10 + idx + 1}</td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-kipan-text-dark">{p.nama_lengkap}</div>
+                      <Link to={`/admin/pengurus/${p.id}`} className="font-semibold text-kipan-text-dark hover:text-kipan-blue hover:underline">{p.nama_lengkap}</Link>
                       <div className="font-mono text-xs text-kipan-navy">{p.nia}</div>
                       {editing === p.id && (
                         <div className="mt-2 space-y-2">

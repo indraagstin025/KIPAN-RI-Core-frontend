@@ -4,6 +4,7 @@ import type {
   JabatanInput,
   MutasiInput,
   PengurusDetail,
+  PengurusDetailResponse,
   PengurusPAWAksi,
   PengurusQuery,
   PengurusStats,
@@ -96,6 +97,10 @@ export function adminListPengurus(q: PengurusQuery): Promise<Paginated<PengurusD
   if (q.kabupaten_id) p.set('kabupaten_id', String(q.kabupaten_id));
   if (q.search) p.set('search', q.search);
   return apiFetchPaginated<PengurusDetail[]>(`/admin/pengurus?${p.toString()}`);
+}
+
+export function adminGetPengurus(id: number): Promise<PengurusDetailResponse> {
+  return apiFetch<PengurusDetailResponse>(`/admin/pengurus/${id}`);
 }
 
 export function adminPengurusStats(): Promise<PengurusStats> {

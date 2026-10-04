@@ -17,6 +17,7 @@ import KtaSayaPage from './features/kta/pages/KtaSayaPage';
 import VerifikasiKtaPage from './features/kta/pages/VerifikasiKtaPage';
 import JabatanPage from './features/kepengurusan/pages/JabatanPage';
 import PengurusListPage from './features/kepengurusan/pages/PengurusListPage';
+import PengurusDetailPage from './features/kepengurusan/pages/PengurusDetailPage';
 import SkDetailPage from './features/kepengurusan/pages/SkDetailPage';
 import SkListPage from './features/kepengurusan/pages/SkListPage';
 import DaftarPage from './features/pendaftaran/pages/DaftarPage';
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="/admin/sk" element={<AdminOnly><SkListPage /></AdminOnly>} />
           <Route path="/admin/sk/:id" element={<AdminOnly><SkDetailPage /></AdminOnly>} />
           <Route path="/admin/pengurus" element={<AdminOnly><PengurusListPage /></AdminOnly>} />
+          <Route path="/admin/pengurus/:id" element={<AdminOnly><PengurusDetailPage /></AdminOnly>} />
           <Route
             path="/admin/jabatan"
             element={<AdminOnly><JabatanPage /></AdminOnly>}
