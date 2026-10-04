@@ -14,6 +14,11 @@ export function retryOutbox(id: number): Promise<void> {
   return apiFetch<void>(`/admin/email-outbox/${id}/retry`, { method: 'POST' });
 }
 
+// sendOutboxNow: kirim satu email SEKARANG (sinkron), tanpa menunggu worker.
+export function sendOutboxNow(id: number): Promise<void> {
+  return apiFetch<void>(`/admin/email-outbox/${id}/send`, { method: 'POST' });
+}
+
 export function retryPendingOutbox(): Promise<{ count: number }> {
   return apiFetch<{ count: number }>('/admin/email-outbox/retry-pending', { method: 'POST' });
 }

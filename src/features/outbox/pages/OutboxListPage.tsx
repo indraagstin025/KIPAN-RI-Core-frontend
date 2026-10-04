@@ -3,7 +3,7 @@ import Button from '@/components/ui/button';
 import { Alert } from '@/components/ui/fields';
 import { ErrorBox, Loading, PageHeader, Pagination } from '@/components/ui/stateful';
 import { ApiError } from '@/services/apiClient';
-import { listOutbox, retryManyOutbox, retryOutbox, retryPendingOutbox } from '../api/outboxService';
+import { listOutbox, retryManyOutbox, retryPendingOutbox, sendOutboxNow } from '../api/outboxService';
 import type { OutboxItem, OutboxJenis, OutboxStatus } from '../types';
 
 const JENIS_LABEL: Record<OutboxJenis, string> = {
@@ -87,12 +87,22 @@ export default function OutboxListPage() {
     <div>
       <PageHeader
         title="Antrian Email"
-        desc="Pemantauan pengiriman email status & kredensial. Pengiriman otomatis oleh worker."
+        desc="Pemantauan pengiriman email. Tombol 'Kirim Sekarang' mengirim langsung; tombol antre menunggu worker (perlu cmd/worker aktif)."
         action={(
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline-navy" onClick={() => void aksi(retryPendingOutbox)} disabled={busy}>Kirim Semua Pending</Button>
-            <Button variant="primary" onClick={() => void aksi(() => retryManyOutbox([...selected]))} disabled={busy || selected.size === 0}>
-              Kirim Ulang Terpilih ({selected.size})
+            <Button variant="outline-navy" onClick={() => void aksi(retryPendingOutbox)} disabled={busy}>Antrekan Semua Pending</Button>
+            <Button variant="outline-navy" onClick={() => void aksi(() => retryManyOutbox([...selected]))} disabled={busy || selected.size === 0}>
+              Antrekan Terpilih ({selected.size})
+            </Button>
+            <Button
+              variant="primary"
+              disabled={busy || selected.size !== 1}
+              onClick={() => {
+                const id = [...selected][0];
+                if (id !== undefined) void aksi(() => sendOutboxNow(id));
+              }}
+            >
+              Kirim Sekarang
             </Button>
           </div>
         )}
@@ -145,7 +155,7 @@ export default function OutboxListPage() {
                   <td className="px-4 py-3 text-xs text-kipan-text-muted">{new Date(it.created_at).toLocaleString('id-ID')}</td>
                   <td className="px-4 py-3 text-right">
                     {it.status !== 'sent' && (
-                      <button type="button" onClick={() => void aksi(() => retryOutbox(it.id))} className="font-semibold text-kipan-blue hover:underline">Kirim Ulang</button>
+                      <button type="button" onClick={() => void aksi(() => sendOutboxNow(it.id))} className="font-semibold text-kipan-blue hover:underline">Kirim Sekarang</button>
                     )}
                   </td>
                 </tr>
