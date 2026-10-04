@@ -1,4 +1,5 @@
 import { apiFetch, apiFetchPaginated, type Paginated } from '@/services/apiClient';
+import type { PengurusDetail } from '@/features/kepengurusan/types';
 import type { WilayahAdminItem, WilayahCards, WilayahDetail, WilayahType } from '../types';
 
 interface ListQuery {
@@ -27,6 +28,11 @@ export function wilayahList(q: ListQuery): Promise<Paginated<WilayahAdminItem[]>
 
 export function wilayahDetail(type: WilayahType, id: number): Promise<WilayahDetail> {
   return apiFetch<WilayahDetail>(`/admin/wilayah/${type}/${id}/detail`);
+}
+
+// wilayahPengurus: daftar pengurus wilayah; all=true termasuk non-aktif.
+export function wilayahPengurus(type: WilayahType, id: number, all = false): Promise<PengurusDetail[]> {
+  return apiFetch<PengurusDetail[]>(`/admin/wilayah/${type}/${id}/pengurus?all=${all}`);
 }
 
 export function wilayahSetStatus(type: WilayahType, id: number, isActive: boolean): Promise<void> {

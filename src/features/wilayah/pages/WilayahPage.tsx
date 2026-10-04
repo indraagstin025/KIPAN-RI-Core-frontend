@@ -8,7 +8,8 @@ import { listKabupaten, listProvinsi } from '@/features/pendaftaran/api/wilayahS
 import type { WilayahKabupaten, WilayahProvinsi } from '@/features/pendaftaran/types';
 import { useDebouncedValue } from '@/hooks/useDebounced';
 import { ApiError } from '@/services/apiClient';
-import { wilayahAdd, wilayahCards, wilayahDetail, wilayahList, wilayahSetStatus } from '../api/wilayahAdminService';
+import { wilayahAdd, wilayahCards, wilayahDetail, wilayahList, wilayahPengurus, wilayahSetStatus } from '../api/wilayahAdminService';
+import type { PengurusDetail } from '@/features/kepengurusan/types';
 import type { WilayahAdminItem, WilayahCards, WilayahDetail, WilayahType } from '../types';
 
 const EMPTY_CARDS: WilayahCards = { total_provinsi: 0, total_kabupaten: 0, total_pengurus: 0 };
@@ -38,6 +39,10 @@ export default function WilayahPage() {
   const [detail, setDetail] = useState<WilayahDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailTab, setDetailTab] = useState<'info' | 'pengurus' | 'statistik' | 'activity'>('info');
+  const [pengurusList, setPengurusList] = useState<PengurusDetail[]>([]);
+  const [pengurusAll, setPengurusAll] = useState(false);
+  const [pengurusLoading, setPengurusLoading] = useState(false);
+  const [pengurusError, setPengurusError] = useState<string | null>(null);
 
   const [showTambah, setShowTambah] = useState(false);
   const [tambahProv, setTambahProv] = useState('');
@@ -101,10 +106,31 @@ export default function WilayahPage() {
     }
   }
 
+  // Tab Pengurus memakai endpoint khusus (filter Aktif/Semua) — bukan data
+  // ringkas dari /detail.
+  const loadPengurus = useCallback(async () => {
+    if (detailTab !== 'pengurus' || !detail) return;
+    setPengurusLoading(true);
+    setPengurusError(null);
+    try {
+      setPengurusList(await wilayahPengurus(detail.type as WilayahType, detail.id, pengurusAll));
+    } catch (e: unknown) {
+      setPengurusError(e instanceof ApiError ? e.message : 'Gagal memuat pengurus wilayah');
+    } finally {
+      setPengurusLoading(false);
+    }
+  }, [detailTab, detail, pengurusAll]);
+
+  useEffect(() => {
+    void loadPengurus();
+  }, [loadPengurus]);
+
   async function bukaDetail(it: WilayahAdminItem): Promise<void> {
     setAksiError(null);
     setDetailTab('info');
     setDetail(null);
+    setPengurusAll(false);
+    setPengurusList([]);
     setDetailLoading(true);
     try {
       setDetail(await wilayahDetail(type, it.id));
@@ -322,27 +348,39 @@ export default function WilayahPage() {
               )}
 
               {detailTab === 'pengurus' && (
-                detail.pengurus.length === 0 ? (
-                  <p className="text-sm text-kipan-text-muted">Belum ada pengurus.</p>
-                ) : (
-                  <div className="overflow-hidden rounded-xl border border-kipan-border">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-kipan-soft-blue text-xs uppercase tracking-wide text-kipan-text-muted">
-                        <tr><th className="px-4 py-2">NIA</th><th className="px-4 py-2">Nama</th><th className="px-4 py-2">Jabatan</th><th className="px-4 py-2">Status</th></tr>
-                      </thead>
-                      <tbody>
-                        {detail.pengurus.map((p) => (
-                          <tr key={p.id} className="border-t border-kipan-border">
-                            <td className="px-4 py-2 font-mono text-xs text-kipan-navy">{p.nia}</td>
-                            <td className="px-4 py-2 font-semibold text-kipan-text-dark">{p.nama_lengkap}</td>
-                            <td className="px-4 py-2 text-kipan-text-muted">{p.jabatan}</td>
-                            <td className="px-4 py-2"><StatusBadge status={p.status} /></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-xs text-kipan-text-muted">Daftar pengurus wilayah ini.</p>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-kipan-text-dark">
+                      <input type="checkbox" checked={pengurusAll} onChange={(e) => setPengurusAll(e.target.checked)} className="h-4 w-4 accent-kipan-navy" />
+                      Tampilkan non-aktif
+                    </label>
                   </div>
-                )
+                  {pengurusError && <div className="mb-3"><ErrorBox message={pengurusError} /></div>}
+                  {pengurusLoading ? (
+                    <div className="space-y-2"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-24 w-full" /></div>
+                  ) : pengurusList.length === 0 ? (
+                    <p className="text-sm text-kipan-text-muted">Belum ada pengurus.</p>
+                  ) : (
+                    <div className="overflow-hidden rounded-xl border border-kipan-border">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-kipan-soft-blue text-xs uppercase tracking-wide text-kipan-text-muted">
+                          <tr><th className="px-4 py-2">NIA</th><th className="px-4 py-2">Nama</th><th className="px-4 py-2">Jabatan</th><th className="px-4 py-2">Status</th></tr>
+                        </thead>
+                        <tbody>
+                          {pengurusList.map((p) => (
+                            <tr key={p.id} className="border-t border-kipan-border">
+                              <td className="px-4 py-2 font-mono text-xs text-kipan-navy">{p.nia}</td>
+                              <td className="px-4 py-2 font-semibold text-kipan-text-dark">{p.nama_lengkap}</td>
+                              <td className="px-4 py-2 text-kipan-text-muted">{p.jabatan}</td>
+                              <td className="px-4 py-2"><StatusBadge status={p.status} /></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               )}
 
               {detailTab === 'statistik' && (

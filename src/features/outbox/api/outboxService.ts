@@ -10,10 +10,6 @@ export function listOutbox(q: OutboxQuery): Promise<Paginated<OutboxItem[]>> {
   return apiFetchPaginated<OutboxItem[]>(`/admin/email-outbox?${p.toString()}`);
 }
 
-export function retryOutbox(id: number): Promise<void> {
-  return apiFetch<void>(`/admin/email-outbox/${id}/retry`, { method: 'POST' });
-}
-
 // sendOutboxNow: kirim satu email SEKARANG (sinkron), tanpa menunggu worker.
 export function sendOutboxNow(id: number): Promise<void> {
   return apiFetch<void>(`/admin/email-outbox/${id}/send`, { method: 'POST' });
