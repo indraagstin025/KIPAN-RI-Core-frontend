@@ -12,7 +12,11 @@ const inputCls = 'w-full rounded-lg border border-kipan-border bg-white px-3.5 p
 export default function ResetPasswordPage({ mode = 'reset' }: { mode?: 'reset' | 'set' }) {
   const isSet = mode === 'set';
   const [params] = useSearchParams();
-  const [token, setToken] = useState(params.get('token') ?? '');
+  // Token dari tautan email dipakai otomatis (disembunyikan). Kolom token hanya
+  // tampil bila dibuka tanpa token di URL (input manual).
+  const urlToken = (params.get('token') ?? '').trim();
+  const showTokenField = urlToken === '';
+  const [token, setToken] = useState(urlToken);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -59,9 +63,11 @@ export default function ResetPasswordPage({ mode = 'reset' }: { mode?: 'reset' |
         ) : (
           <form onSubmit={(e) => void submit(e)} className="mt-6 grid gap-5">
             {error && <ErrorBox message={error} />}
-            <Field label={isSet ? 'Token' : 'Token Reset'} required hint="Dari tautan email (otomatis terisi bila membuka tautan).">
-              <input value={token} onChange={(e) => setToken(e.target.value)} className={inputCls} />
-            </Field>
+            {showTokenField && (
+              <Field label={isSet ? 'Token' : 'Token Reset'} required hint="Tempel token dari email bila Anda tidak membuka tautan langsung.">
+                <input value={token} onChange={(e) => setToken(e.target.value)} className={inputCls} />
+              </Field>
+            )}
             <Field label="Kata Sandi Baru" required hint="Min 8 karakter: huruf besar/kecil, angka, simbol.">
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
             </Field>
