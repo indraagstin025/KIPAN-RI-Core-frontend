@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '@/components/ui/button';
 import { Alert, Stepper, TextInput } from '@/components/ui/fields';
 import { Spinner } from '@/components/ui/loading';
@@ -73,6 +73,7 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
 
   const [jabatanList, setJabatanList] = useState<Jabatan[]>([]);
   const [takenInti, setTakenInti] = useState<Set<number>>(new Set());
+  const [takenNames, setTakenNames] = useState<Map<number, string>>(new Map());
   const [loadingJabatan, setLoadingJabatan] = useState(false);
   const [jabatanId, setJabatanId] = useState('');
   const [tanggalMulai, setTanggalMulai] = useState('');
@@ -104,16 +105,41 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
       .finally(() => setLoadingAnggota(false));
   }, [open, needAnggotaStep, debouncedCari]);
 
-  // Saat SK dipilih: muat master jabatan (tanpa level) + tandai jabatan inti terisi.
+  const wasOpen = useRef(false);
+  const lastSkId = useRef<number | null>(null);
+
+  // Reset state saat modal dibuka (false→true) agar tidak membawa sisa sesi lalu
+  // (mis. langkah terakhir / jabatan yang sudah dikosongkan oleh sesi sebelumnya).
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      lastSkId.current = null;
+      setStepIdx(0);
+      setError(null);
+      setSuccess(false);
+      setSk(presetSK ?? null);
+      setAnggota(presetAnggota ?? null);
+      setJabatanId('');
+      setKonfirmasi(false);
+      setCari('');
+    }
+    wasOpen.current = open;
+  }, [open, presetSK, presetAnggota]);
+
+  // Saat SK dipilih: muat master jabatan (tanpa level) + tandai jabatan inti yang
+  // MASIH AKTIF. Pemegang Demisioner/berakhir tidak memblokir (TDD §5.4).
   useEffect(() => {
     if (!open || !sk) return;
+    const skChanged = lastSkId.current !== sk.id;
+    lastSkId.current = sk.id;
     setLoadingJabatan(true);
-    setJabatanId('');
+    if (skChanged) setJabatanId('');
     setTanggalMulai(sk.tanggal_terbit ? sk.tanggal_terbit.slice(0, 10) : '');
     Promise.all([adminListJabatan(false), adminGetSK(sk.id)])
       .then(([js, detail]) => {
         setJabatanList(js.filter((j) => j.is_active));
-        setTakenInti(new Set(detail.pengurus.filter((p) => p.is_inti).map((p) => p.jabatan_id)));
+        const aktifInti = detail.pengurus.filter((p) => p.is_inti && p.status === 'Aktif');
+        setTakenInti(new Set(aktifInti.map((p) => p.jabatan_id)));
+        setTakenNames(new Map(aktifInti.map((p) => [p.jabatan_id, p.nama_lengkap])));
       })
       .catch((e: unknown) => setError(e instanceof ApiError ? e.message : 'Gagal memuat jabatan'))
       .finally(() => setLoadingJabatan(false));
@@ -136,7 +162,10 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
       return;
     }
     if (currentKey === 'jabatan' && !jabatanId) {
-      setError('Pilih jabatan terlebih dahulu.');
+      const adaPilihan = jabatanList.some((j) => !(j.is_inti && takenInti.has(j.id)));
+      setError(adaPilihan
+        ? 'Pilih jabatan terlebih dahulu.'
+        : 'Semua jabatan inti pada SK ini sudah terisi pemegang aktif. Pilih jabatan non-inti, atau lepas/ganti pengurus yang ada terlebih dahulu.');
       return;
     }
     if (stepIdx < stepKeys.length - 1) setStepIdx((i) => i + 1);
@@ -262,23 +291,32 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
                 <Alert kind="info">Belum ada master jabatan. Tambahkan dulu di menu Master Jabatan (semua admin boleh menambah).</Alert>
               ) : (
                 <div className="grid gap-2">
+                  <p className="text-xs text-kipan-text-muted">
+                    Jabatan inti hanya untuk satu orang. Jabatan yang sudah terisi pemegang <b>aktif</b> tidak dapat dipilih&nbsp;—
+                    lepas atau ganti terlebih dahulu. Pemegang Demisioner tidak memblokir.
+                  </p>
                   {jabatanList.map((j) => {
                     const taken = j.is_inti && takenInti.has(j.id);
                     const selected = String(j.id) === jabatanId;
+                    const occupant = takenNames.get(j.id);
                     return (
                       <button
                         key={j.id}
                         type="button"
                         disabled={taken}
+                        aria-disabled={taken || undefined}
+                        title={taken ? `Jabatan inti sudah diisi: ${occupant ?? '-'}` : undefined}
                         onClick={() => setJabatanId(String(j.id))}
                         className={`flex items-center justify-between rounded-lg border-2 px-4 py-3 text-left text-sm ${
-                          taken ? 'cursor-not-allowed border-kipan-border bg-kipan-soft-gray opacity-60'
+                          taken ? 'cursor-not-allowed border-kipan-border bg-kipan-soft-gray opacity-70'
                             : selected ? 'border-kipan-navy bg-kipan-soft-blue font-semibold'
                             : 'border-kipan-border hover:border-kipan-blue/50'
                         }`}
                       >
                         <span>{j.nama}{j.is_inti ? ' (inti)' : ''}</span>
-                        {taken && <span className="text-xs font-semibold text-kipan-red">sudah terisi</span>}
+                        {taken && (
+                          <span className="text-xs font-semibold text-kipan-red">Sudah diisi: {occupant ?? '-'}</span>
+                        )}
                       </button>
                     );
                   })}
