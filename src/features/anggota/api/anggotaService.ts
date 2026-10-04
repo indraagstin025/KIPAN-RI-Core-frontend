@@ -1,17 +1,17 @@
 import { api, apiFetch, apiFetchPaginated, type Paginated } from '@/services/apiClient';
-import type { AnggotaCreateInput, AnggotaDetail, AnggotaPublicInfo, AnggotaQuery, AnggotaUpdateInput } from '../types';
+import type { AnggotaCreateInput, AnggotaDetail, AnggotaListItem, AnggotaPublicInfo, AnggotaQuery, AnggotaUpdateInput } from '../types';
 
 export function checkPublic(nia: string): Promise<AnggotaPublicInfo> {
   return apiFetch<AnggotaPublicInfo>(`/anggota/cek?q=${encodeURIComponent(nia)}`);
 }
 
-export function adminListAnggota(q: AnggotaQuery): Promise<Paginated<AnggotaDetail[]>> {
+export function adminListAnggota(q: AnggotaQuery): Promise<Paginated<AnggotaListItem[]>> {
   const p = new URLSearchParams();
   p.set('page', String(q.page ?? 1));
   p.set('limit', String(q.limit ?? 25));
   if (q.status) p.set('status', q.status);
   if (q.search) p.set('search', q.search);
-  return apiFetchPaginated<AnggotaDetail[]>(`/admin/anggota?${p.toString()}`);
+  return apiFetchPaginated<AnggotaListItem[]>(`/admin/anggota?${p.toString()}`);
 }
 
 export interface AnggotaCursorQuery {
@@ -27,14 +27,14 @@ export interface CursorResult<T> {
 }
 
 // adminListAnggotaCursor: keyset pagination (tanpa COUNT/OFFSET besar).
-export async function adminListAnggotaCursor(q: AnggotaCursorQuery): Promise<CursorResult<AnggotaDetail[]>> {
+export async function adminListAnggotaCursor(q: AnggotaCursorQuery): Promise<CursorResult<AnggotaListItem[]>> {
   const p = new URLSearchParams();
   p.set('paginate', 'cursor');
   p.set('limit', String(q.limit ?? 25));
   if (q.status) p.set('status', q.status);
   if (q.search) p.set('search', q.search);
   if (q.cursor) p.set('cursor', q.cursor);
-  const res = await apiFetchPaginated<AnggotaDetail[]>(`/admin/anggota?${p.toString()}`);
+  const res = await apiFetchPaginated<AnggotaListItem[]>(`/admin/anggota?${p.toString()}`);
   return { data: res.data, nextCursor: res.meta.next_cursor ?? '' };
 }
 

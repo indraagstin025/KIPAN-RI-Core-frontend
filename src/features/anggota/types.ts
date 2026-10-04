@@ -21,6 +21,22 @@ export interface AnggotaListItem {
   created_at: string;
 }
 
+// Proyeksi daftar (ringkas) — TIDAK memuat seluruh field detail.
+export interface AnggotaListItem {
+  id: number;
+  nia: string;
+  nama_lengkap: string;
+  status: string;
+  pekerjaan: string;
+  riwayat: string;
+  provinsi_id: number;
+  provinsi_nama: string;
+  kabupaten_id: number;
+  kabupaten_nama: string;
+  tanggal_angkat: string;
+  created_at: string;
+}
+
 export interface AnggotaDetail {
   id: number;
   nia: string;

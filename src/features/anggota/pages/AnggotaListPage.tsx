@@ -4,14 +4,14 @@ import Button from '@/components/ui/button';
 import { CursorPager, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
 import { useDebouncedValue } from '@/hooks/useDebounced';
 import { ApiError } from '@/services/apiClient';
-import { adminDeactivateAnggota, adminExportAnggota, adminListAnggotaCursor } from '../api/anggotaService';
+import { adminDeactivateAnggota, adminExportAnggota, adminGetAnggota, adminListAnggotaCursor } from '../api/anggotaService';
 import AnggotaFormModal from '../components/AnggotaFormModal';
-import type { AnggotaDetail } from '../types';
+import type { AnggotaDetail, AnggotaListItem } from '../types';
 
 const STATUS_OPTIONS = ['', 'AKTIF', 'NONAKTIF', 'DEMISIONER', 'DIBERHENTIKAN', 'MENINGGAL'];
 
 export default function AnggotaListPage() {
-  const [items, setItems] = useState<AnggotaDetail[]>([]);
+  const [items, setItems] = useState<AnggotaListItem[]>([]);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 300);
   const [status, setStatus] = useState('');
@@ -22,6 +22,7 @@ export default function AnggotaListPage() {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editMember, setEditMember] = useState<AnggotaDetail | null>(null);
+  const [editBusyId, setEditBusyId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,7 +52,23 @@ export default function AnggotaListPage() {
     setHistory([]);
   }
 
-  async function nonaktifkan(a: AnggotaDetail): Promise<void> {
+  // Edit memerlukan DTO LENGKAP: daftar hanya proyeksi ringkas, jadi ambil
+  // detail dulu sebelum membuka modal.
+  async function editAnggota(a: AnggotaListItem): Promise<void> {
+    setError(null);
+    setEditBusyId(a.id);
+    try {
+      const detail = await adminGetAnggota(a.id);
+      setEditMember(detail);
+      setShowForm(true);
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Gagal memuat detail anggota');
+    } finally {
+      setEditBusyId(null);
+    }
+  }
+
+  async function nonaktifkan(a: AnggotaListItem): Promise<void> {
     if (!window.confirm(`Nonaktifkan anggota ${a.nama_lengkap}?`)) return;
     try {
       await adminDeactivateAnggota(a.id);
@@ -133,7 +150,9 @@ export default function AnggotaListPage() {
                   <td className="px-4 py-3">
                     <div className="flex flex-col items-end gap-1">
                       <Link to={`/admin/anggota/${a.id}`} className="font-semibold text-kipan-blue hover:underline">Detail →</Link>
-                      <button type="button" onClick={() => { setEditMember(a); setShowForm(true); }} className="font-semibold text-kipan-blue hover:underline">Edit</button>
+                      <button type="button" disabled={editBusyId === a.id} onClick={() => void editAnggota(a)} className="font-semibold text-kipan-blue hover:underline disabled:opacity-50">
+                        {editBusyId === a.id ? 'Memuat…' : 'Edit'}
+                      </button>
                       {a.status !== 'NONAKTIF' && (
                         <button type="button" onClick={() => void nonaktifkan(a)} className="font-semibold text-kipan-red hover:underline">Nonaktifkan</button>
                       )}

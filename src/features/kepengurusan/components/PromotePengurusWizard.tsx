@@ -4,7 +4,6 @@ import { Alert, Stepper, TextInput } from '@/components/ui/fields';
 import { Spinner } from '@/components/ui/loading';
 import { Modal } from '@/components/ui/modal';
 import { adminListAnggota } from '@/features/anggota/api/anggotaService';
-import type { AnggotaDetail } from '@/features/anggota/types';
 import type { Role } from '@/features/auth/types';
 import { useDebouncedValue } from '@/hooks/useDebounced';
 import { ApiError } from '@/services/apiClient';
@@ -13,6 +12,18 @@ import { canManagePengurusForLevel } from '../roles';
 import type { Jabatan, SKListItem } from '../types';
 
 type StepKey = 'sk' | 'anggota' | 'jabatan' | 'konfirmasi';
+
+// KaderRef = field minimal yang dibutuhkan wizard (kompatibel dengan DTO daftar
+// AnggotaListItem maupun AnggotaDetail).
+interface KaderRef {
+  id: number;
+  nia: string;
+  nama_lengkap: string;
+  provinsi_id: number;
+  kabupaten_id: number;
+  provinsi_nama?: string;
+  kabupaten_nama?: string;
+}
 
 const STEP_LABEL: Record<StepKey, string> = {
   sk: 'Pilih SK',
@@ -27,7 +38,7 @@ interface Props {
   onDone: () => void;
   actorRole?: Role | null;
   presetSK?: SKListItem | null;
-  presetAnggota?: AnggotaDetail | null;
+  presetAnggota?: KaderRef | null;
 }
 
 function skWilayah(s: SKListItem): string {
@@ -54,10 +65,10 @@ export default function PromotePengurusWizard({ open, onClose, onDone, actorRole
   const [skOptions, setSkOptions] = useState<SKListItem[]>([]);
   const [loadingSk, setLoadingSk] = useState(false);
 
-  const [anggota, setAnggota] = useState<AnggotaDetail | null>(presetAnggota ?? null);
+  const [anggota, setAnggota] = useState<KaderRef | null>(presetAnggota ?? null);
   const [cari, setCari] = useState('');
   const debouncedCari = useDebouncedValue(cari, 300);
-  const [hasilAnggota, setHasilAnggota] = useState<AnggotaDetail[]>([]);
+  const [hasilAnggota, setHasilAnggota] = useState<KaderRef[]>([]);
   const [loadingAnggota, setLoadingAnggota] = useState(false);
 
   const [jabatanList, setJabatanList] = useState<Jabatan[]>([]);
