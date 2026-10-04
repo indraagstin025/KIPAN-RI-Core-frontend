@@ -1,5 +1,6 @@
 import { api, apiFetch, apiFetchPaginated, type Paginated } from '@/services/apiClient';
-import type { AnggotaCreateInput, AnggotaDetail, AnggotaListItem, AnggotaPublicInfo, AnggotaQuery, AnggotaUpdateInput } from '../types';
+import type { ActivityLog } from '@/features/audit/types';
+import type { AnggotaCreateInput, AnggotaDetail, AnggotaListItem, AnggotaPublicInfo, AnggotaQuery, AnggotaRiwayatItem, AnggotaUpdateInput } from '../types';
 
 export function checkPublic(nia: string): Promise<AnggotaPublicInfo> {
   return apiFetch<AnggotaPublicInfo>(`/anggota/cek?q=${encodeURIComponent(nia)}`);
@@ -40,6 +41,16 @@ export async function adminListAnggotaCursor(q: AnggotaCursorQuery): Promise<Cur
 
 export function adminGetAnggota(id: number): Promise<AnggotaDetail> {
   return apiFetch<AnggotaDetail>(`/admin/anggota/${id}`);
+}
+
+// adminAnggotaRiwayat: timeline riwayat anggota (pendaftaran + kepengurusan).
+export function adminAnggotaRiwayat(id: number): Promise<AnggotaRiwayatItem[]> {
+  return apiFetch<AnggotaRiwayatItem[]>(`/admin/anggota/${id}/riwayat`);
+}
+
+// adminAnggotaActivity: jejak audit anggota.
+export function adminAnggotaActivity(id: number): Promise<ActivityLog[]> {
+  return apiFetch<ActivityLog[]>(`/admin/anggota/${id}/activity`);
 }
 
 // adminKtaUrl: tiket unduh PDF KTA anggota (admin, tercatat audit).

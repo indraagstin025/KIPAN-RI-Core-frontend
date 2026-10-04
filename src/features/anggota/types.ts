@@ -73,6 +73,15 @@ export interface AnggotaDetail {
   riwayat?: string;
 }
 
+export interface AnggotaRiwayatItem {
+  waktu: string;
+  sumber: string; // PENDAFTARAN | KEPENGURUSAN
+  aksi: string;
+  label: string;
+  oleh: string;
+  keterangan?: string;
+}
+
 export interface AnggotaCreateInput {
   nama_lengkap: string;
   nik: string;
