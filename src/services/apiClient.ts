@@ -106,6 +106,12 @@ api.interceptors.response.use(
         return api(original);
       }
     }
+    // 403 bisa berarti token di tab ini milik akun lain (cookie refresh dipakai
+    // bersama antar-tab). Beri tahu AuthContext untuk satu kali rekonsiliasi;
+    // error asli tetap dilempar agar 403 yang sah tetap tampil.
+    if (err.response?.status === 403 && typeof window !== 'undefined' && !skipRefresh) {
+      window.dispatchEvent(new Event('auth:forbidden'));
+    }
     throw toApiError(err);
   },
 );

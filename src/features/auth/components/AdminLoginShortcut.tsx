@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Spinner } from '@/components/ui/loading';
 import { Field, TextInput } from '@/components/ui/fields';
@@ -13,6 +13,7 @@ export default function AdminLoginShortcut() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [roleMismatch, setRoleMismatch] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function AdminLoginShortcut() {
   function close(): void {
     setOpen(false);
     setError(null);
+    setRoleMismatch(false);
     setEmail('');
     setPassword('');
   }
@@ -68,11 +70,13 @@ export default function AdminLoginShortcut() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setRoleMismatch(false);
     try {
       const user = await login(email.trim(), password);
       if (!isAdminRole(user.role)) {
         await logout();
-        setError('Akun ini bukan akun admin.');
+        setError('Akun anggota tidak dapat masuk di sini. Silakan masuk melalui halaman Masuk Anggota.');
+        setRoleMismatch(true);
         return;
       }
       close();
@@ -105,8 +109,13 @@ export default function AdminLoginShortcut() {
           </button>
         </div>
 
-        <form onSubmit={(e) => void submit(e)} className="mt-4 grid gap-4">
-          {error && <ErrorBox message={error} />}
+          <form onSubmit={(e) => void submit(e)} className="mt-4 grid gap-4">
+            {error && <ErrorBox message={error} />}
+            {roleMismatch && (
+              <Link to="/login" onClick={close} className="text-center text-xs font-semibold text-kipan-blue hover:underline">
+                Ke halaman Masuk Anggota →
+              </Link>
+            )}
           <Field label="Email" required>
             <TextInput value={email} onChange={setEmail} inputMode="email" placeholder="nama@kipan.id" />
           </Field>

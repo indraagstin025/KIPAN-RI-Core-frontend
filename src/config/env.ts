@@ -11,6 +11,42 @@ let accessToken: string | null = null;
 // refresh cookie tanpa harus menembak endpoint sia-sia pada pengunjung anonim.
 export const SESSION_HINT_KEY = 'kipan_has_session';
 
+// Identitas sesi non-sensitif (id + role, tanpa token) untuk sinkronisasi
+// antar-tab: cookie refresh dipakai bersama, jadi login di satu tab harus
+// diikuti tab lain (last login wins).
+export const SESSION_USER_KEY = 'kipan_session_user';
+
+export interface SessionIdentity {
+  id: string;
+  role: string;
+}
+
+export function setSessionIdentity(id: string | null, role: string | null): void {
+  try {
+    if (id && role) {
+      localStorage.setItem(SESSION_USER_KEY, JSON.stringify({ id, role }));
+    } else {
+      localStorage.removeItem(SESSION_USER_KEY);
+    }
+  } catch {
+    // abaikan (mode privat)
+  }
+}
+
+export function getSessionIdentity(): SessionIdentity | null {
+  try {
+    const raw = localStorage.getItem(SESSION_USER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SessionIdentity>;
+    if (typeof parsed.id === 'string' && typeof parsed.role === 'string') {
+      return { id: parsed.id, role: parsed.role };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function getAccessToken(): string | null {
   return accessToken;
 }

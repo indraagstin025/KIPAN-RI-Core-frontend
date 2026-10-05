@@ -12,7 +12,7 @@ export default function LoginPage() {
     const user = await login(email, password);
     if (isAdminRole(user.role)) {
       await logout();
-      throw new Error('Akun ini bukan akun anggota/kader.');
+      throw new Error('Akun admin tidak dapat masuk di sini. Buka halaman utama lalu tekan Ctrl+A+I untuk membuka Masuk Admin.');
     }
     return user;
   }
@@ -27,9 +27,12 @@ export default function LoginPage() {
       onSubmit={handleLogin}
       onSuccess={() => navigate(target, { replace: true })}
       footer={
-        <p className="mt-4 text-center text-xs text-kipan-text-muted">
-          Belum punya akun? <Link to="/daftar" className="font-semibold text-kipan-blue hover:underline">Daftar di sini</Link>
-        </p>
+        <div className="mt-4 space-y-1 text-center text-xs text-kipan-text-muted">
+          <p>
+            Belum punya akun? <Link to="/daftar" className="font-semibold text-kipan-blue hover:underline">Daftar di sini</Link>
+          </p>
+          <p>Petugas? Buka halaman utama lalu tekan Ctrl+A+I untuk Masuk Admin.</p>
+        </div>
       }
     />
   );
