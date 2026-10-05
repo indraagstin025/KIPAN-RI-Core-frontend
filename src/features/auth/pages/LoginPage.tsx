@@ -28,12 +28,9 @@ export default function LoginPage() {
       onSubmit={handleLogin}
       onSuccess={() => navigate(target, { replace: true })}
       footer={
-        <div className="mt-4 space-y-1 text-center text-xs text-kipan-text-muted">
-          <p>
-            Belum punya akun? <Link to="/daftar" className="font-semibold text-kipan-blue hover:underline">Daftar di sini</Link>
-          </p>
-          <p>Petugas? Buka halaman utama lalu tekan Ctrl+A+I untuk Masuk Admin.</p>
-        </div>
+        <p className="mt-4 text-center text-xs text-kipan-text-muted">
+          Belum punya akun? <Link to="/daftar" className="font-semibold text-kipan-blue hover:underline">Daftar di sini</Link>
+        </p>
       }
     />
   );
