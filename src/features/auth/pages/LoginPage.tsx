@@ -11,8 +11,9 @@ export default function LoginPage() {
   async function handleLogin(email: string, password: string) {
     const user = await login(email, password);
     if (isAdminRole(user.role)) {
+      // Anti-enumeration: jangan bocorkan jenis akun. Pesan generik saja.
       await logout();
-      throw new Error('Akun admin tidak dapat masuk di sini. Buka halaman utama lalu tekan Ctrl+A+I untuk membuka Masuk Admin.');
+      throw new Error('Email dan password salah.');
     }
     return user;
   }
