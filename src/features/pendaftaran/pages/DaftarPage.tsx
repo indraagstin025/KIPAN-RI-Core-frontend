@@ -6,6 +6,7 @@ import { Spinner, Overlay } from '@/components/ui/loading';
 import { ApiError } from '@/services/apiClient';
 import { DOKUMEN_LIST, isDokumenWajib } from '../constants/dokumen';
 import { PERSYARATAN } from '../constants/persyaratan';
+import { AGAMA_OPTIONS, PENDIDIKAN_OPTIONS } from '../constants/pilihan';
 import { fileSig, pdfLocked } from '../hooks/useDokumenCheck';
 import { submitPendaftaran } from '../api/pendaftaranService';
 import { uploadDokumen } from '../api/storageService';
@@ -289,11 +290,15 @@ export default function DaftarPage() {
     if (age === null) e.tanggal = 'Tanggal lahir wajib diisi';
     else if (age < 16 || age > 30) e.tanggal = 'Usia pendaftar harus 16-30 tahun';
     if (jk !== 'L' && jk !== 'P') e.jk = 'Pilih jenis kelamin';
-    for (const [k, v, label] of [['agama', agama, 'Agama'], ['pendidikan', pendidikan, 'Pendidikan'], ['pekerjaan', pekerjaan, 'Pekerjaan']] as const) {
-      if (!v.trim()) e[k] = `${label} wajib diisi`;
-      else if (v.trim().length > 100) e[k] = `${label} melebihi batas karakter`;
-      else if (hasAngleBracket(v)) e[k] = `${label} tidak boleh mengandung < atau >`;
-    }
+    if (!agama.trim()) e.agama = 'Pilih agama';
+    else if (agama.trim().length > 100) e.agama = 'Agama melebihi batas karakter';
+    else if (hasAngleBracket(agama)) e.agama = 'Agama tidak boleh mengandung < atau >';
+    if (!pendidikan.trim()) e.pendidikan = 'Pilih pendidikan';
+    else if (pendidikan.trim().length > 100) e.pendidikan = 'Pendidikan melebihi batas karakter';
+    else if (hasAngleBracket(pendidikan)) e.pendidikan = 'Pendidikan tidak boleh mengandung < atau >';
+    if (!pekerjaan.trim()) e.pekerjaan = 'Pekerjaan wajib diisi';
+    else if (pekerjaan.trim().length > 100) e.pekerjaan = 'Pekerjaan melebihi batas karakter';
+    else if (hasAngleBracket(pekerjaan)) e.pekerjaan = 'Pekerjaan tidak boleh mengandung < atau >';
     const al = alamat.trim();
     if (al.length < 10 || al.length > 2000) e.alamat = 'Alamat wajib 10-2000 karakter';
     if (!prov) e.prov = 'Pilih provinsi';
@@ -622,10 +627,26 @@ export default function DaftarPage() {
                   />
                 </Field>
                 <Field label="Agama" required error={visibleError('agama')}>
-                  <TextInput value={agama} {...bindText('agama', setAgama)} maxLength={100} id="f-agama" invalid={isInvalid('agama')} />
+                  <SelectInput
+                    value={agama}
+                    onChange={(v) => setAgama(v)}
+                    onBlur={() => markTouched('agama')}
+                    id="f-agama"
+                    invalid={isInvalid('agama')}
+                    placeholder="Pilih agama"
+                    options={AGAMA_OPTIONS}
+                  />
                 </Field>
                 <Field label="Pendidikan Terakhir" required error={visibleError('pendidikan')}>
-                  <TextInput value={pendidikan} {...bindText('pendidikan', setPendidikan)} placeholder="cth: SMA, S1" maxLength={100} id="f-pendidikan" invalid={isInvalid('pendidikan')} />
+                  <SelectInput
+                    value={pendidikan}
+                    onChange={(v) => setPendidikan(v)}
+                    onBlur={() => markTouched('pendidikan')}
+                    id="f-pendidikan"
+                    invalid={isInvalid('pendidikan')}
+                    placeholder="Pilih pendidikan"
+                    options={PENDIDIKAN_OPTIONS}
+                  />
                 </Field>
                 <Field label="Pekerjaan" required error={visibleError('pekerjaan')}>
                   <TextInput value={pekerjaan} {...bindText('pekerjaan', setPekerjaan)} maxLength={100} id="f-pekerjaan" invalid={isInvalid('pekerjaan')} />
