@@ -25,11 +25,12 @@ interface TextProps {
   id?: string;
   invalid?: boolean;
   onBlur?: () => void;
+  autoComplete?: string; // FE-06: petunjuk pengisian browser (mis. "email", "one-time-code")
 }
 
 const invalidCls = 'border-kipan-red focus:border-kipan-red focus:ring-kipan-red/20';
 
-export function TextInput({ value, onChange, placeholder, inputMode = 'text', maxLength, id, invalid = false, onBlur }: TextProps) {
+export function TextInput({ value, onChange, placeholder, inputMode = 'text', maxLength, id, invalid = false, onBlur, autoComplete }: TextProps) {
   return (
     <input
       type="text"
@@ -40,6 +41,7 @@ export function TextInput({ value, onChange, placeholder, inputMode = 'text', ma
       placeholder={placeholder}
       inputMode={inputMode}
       maxLength={maxLength}
+      autoComplete={autoComplete}
       aria-invalid={invalid || undefined}
       className={`${inputCls} ${invalid ? invalidCls : ''}`}
     />
