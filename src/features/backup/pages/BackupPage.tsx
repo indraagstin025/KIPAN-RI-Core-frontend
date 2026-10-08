@@ -4,7 +4,7 @@ import { Alert } from '@/components/ui/fields';
 import { Spinner } from '@/components/ui/loading';
 import { ErrorBox, Loading, PageHeader, Pagination } from '@/components/ui/stateful';
 import { ApiError } from '@/services/apiClient';
-import { createBackup, deleteBackup, downloadBackup, listBackups } from '../api/backupService';
+import { createBackup, deleteBackup, downloadBackup, getBackup, listBackups } from '../api/backupService';
 import StepUpModal from '@/features/auth/components/StepUpModal';
 import type { Backup } from '../types';
 
@@ -24,6 +24,7 @@ export default function BackupPage() {
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [unduhTarget, setUnduhTarget] = useState<Backup | null>(null);
+  const [jobId, setJobId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,16 +51,51 @@ export default function BackupPage() {
     setError(null);
     setOk(null);
     try {
+      // 202: pekerjaan dimulai di latar, bukan arsip jadi.
       const b = await createBackup();
-      setOk(`Backup dibuat: ${b.filename} (${formatSize(b.size_bytes)})`);
+      setJobId(b.id);
+      setOk(`Backup #${b.id} dimulai. Memantau status...`);
       setPage(1);
       await load();
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal membuat backup');
-    } finally {
       setBusy(false);
     }
   }
+
+  // Poll pekerjaan async tiap 3 dtk sampai ready/failed.
+  useEffect(() => {
+    if (jobId === null) return;
+    let stop = false;
+    const tick = async (): Promise<void> => {
+      try {
+        const b = await getBackup(jobId);
+        if (stop) return;
+        if (b.status === 'ready') {
+          setOk(`Backup selesai: ${b.filename} (${formatSize(b.size_bytes)})`);
+          setJobId(null);
+          setBusy(false);
+          await load();
+        } else if (b.status === 'failed') {
+          setError(b.error ?? 'Backup gagal di server.');
+          setJobId(null);
+          setBusy(false);
+          await load();
+        }
+      } catch (e: unknown) {
+        if (stop) return;
+        setError(e instanceof ApiError ? e.message : 'Gagal memantau backup');
+        setJobId(null);
+        setBusy(false);
+      }
+    };
+    void tick();
+    const t = window.setInterval(() => void tick(), 3000);
+    return () => {
+      stop = true;
+      window.clearInterval(t);
+    };
+  }, [jobId, load]);
 
   async function unduh(b: Backup): Promise<void> {
     // Arsip berisi PII massal: verifikasi ulang dulu, token dipakai sekali.
@@ -129,13 +165,13 @@ export default function BackupPage() {
                   <td className="px-4 py-3 font-mono text-xs text-kipan-text-dark">{b.filename}</td>
                   <td className="px-4 py-3 text-kipan-text-muted">{formatSize(b.size_bytes)}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${b.status === 'ready' ? 'bg-emerald-100 text-kipan-green' : 'bg-red-100 text-kipan-red'}`}>{b.status}</span>
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${b.status === 'ready' ? 'bg-emerald-100 text-kipan-green' : b.status === 'running' ? 'bg-sky-100 text-kipan-blue' : 'bg-red-100 text-kipan-red'}`}>{b.status}</span>
                   </td>
                   <td className="px-4 py-3 text-xs text-kipan-text-muted">{new Date(b.created_at).toLocaleString('id-ID')}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-3">
-                      <button type="button" onClick={() => void unduh(b)} className="font-semibold text-kipan-blue hover:underline">Unduh</button>
-                      <button type="button" onClick={() => void hapus(b)} className="font-semibold text-kipan-red hover:underline">Hapus</button>
+                      <button type="button" onClick={() => void unduh(b)} disabled={b.status !== 'ready'} className="font-semibold text-kipan-blue hover:underline disabled:opacity-40 disabled:hover:no-underline">Unduh</button>
+                      <button type="button" onClick={() => void hapus(b)} disabled={b.status === 'running'} className="font-semibold text-kipan-red hover:underline disabled:opacity-40 disabled:hover:no-underline">Hapus</button>
                     </div>
                   </td>
                 </tr>
