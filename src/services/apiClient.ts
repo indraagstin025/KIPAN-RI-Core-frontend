@@ -1,6 +1,7 @@
 // src/services/apiClient.ts
 import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig } from 'axios';
 import { API_BASE_URL, DEFAULT_REQUEST_TIMEOUT_MS, getAccessToken, setAccessToken } from '@/config/env';
+import { classifyNetworkError } from './networkError';
 
 export interface BackendError {
     success: false;
@@ -30,11 +31,18 @@ function toApiError(err: unknown): ApiError {
         const status = ax.response?.status ?? 0;
         const data = ax.response?.data;
         if (status === 0) {
-            // N3: bedakan offline vs server tak terjangkau (katalog §19.3).
-            if (typeof navigator !== 'undefined' && !navigator.onLine) {
-                return new ApiError(0, 'OFFLINE', 'Anda sedang offline. Perubahan tersimpan lokal dan dikirim saat online.');
-            }
-            return new ApiError(0, 'SERVER_UNREACHABLE', 'Server tidak merespons dalam 15 detik. Coba lagi.');
+            // C (audit timeout 09 Okt 2026): bedakan timeout beneran dari
+            // kegagalan koneksi lain. Hanya ECONNABORTED yang boleh disebut
+            // "timeout"; CORS/server-down tak terbedakan browser (keduanya
+            // tanpa respons) sehingga memakai pesan netral.
+            const onLine = typeof navigator !== 'undefined' ? navigator.onLine : true;
+            const cls = classifyNetworkError({
+                axiosCode: ax.code,
+                axiosMessage: ax.message,
+                onLine,
+                timeoutMs: DEFAULT_REQUEST_TIMEOUT_MS,
+            });
+            return new ApiError(0, cls.code, cls.message);
         }
         if (status === 503) {
             return new ApiError(status, data?.code ?? 'UNAVAILABLE', 'Layanan sementara tidak tersedia. Coba beberapa saat lagi.', {});
