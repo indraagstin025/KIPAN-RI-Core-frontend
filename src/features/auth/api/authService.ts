@@ -53,12 +53,23 @@ export function enrollConfirm(setupToken: string, code: string): Promise<{ recov
 }
 
 // requestStepUp: verifikasi ulang untuk operasi sensitif (AUTH-20).
-// Mengembalikan token sekali pakai (5 menit) via header X-StepUp-Token.
-export function requestStepUp(password: string, code?: string): Promise<{ token: string; expires_in: number }> {
-  return apiFetch<{ token: string; expires_in: number }>('/auth/step-up', {
+// Mengembalikan token sekali pakai (5 menit) via header X-StepUp-Token +
+// grace Buka NIK K8 (nik_grace_expires_in, detik, untuk banner).
+export function requestStepUp(password: string, code?: string): Promise<{ token: string; expires_in: number; nik_grace_expires_in?: number }> {
+  return apiFetch<{ token: string; expires_in: number; nik_grace_expires_in?: number }>('/auth/step-up', {
     method: 'POST',
     data: { password, ...(code ? { code } : {}) },
   });
+}
+
+// nikGraceStatus: grace Buka NIK aktif + sisa detik (K8, untuk banner).
+export function nikGraceStatus(): Promise<{ active: boolean; expires_in: number }> {
+  return apiFetch<{ active: boolean; expires_in: number }>('/auth/step-up/grace');
+}
+
+// lockNikGrace: kunci manual grace Buka NIK (K8).
+export function lockNikGrace(): Promise<null> {
+  return apiFetch<null>('/auth/step-up/grace', { method: 'DELETE' });
 }
 
 export function logout(): Promise<null> {

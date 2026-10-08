@@ -62,7 +62,7 @@ export default function StepUpModal({ open, title, onClose, onToken }: Props) {
       <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
         <h2 className="font-serif text-lg font-bold text-kipan-text-dark">{title}</h2>
         <p className="mt-1 text-xs text-kipan-text-muted">
-          Operasi sensitif memerlukan verifikasi ulang. Token berlaku 5 menit untuk satu operasi.
+          Operasi sensitif memerlukan verifikasi ulang. Token sekali pakai 5 menit; untuk Buka NIK, verifikasi berlaku 30 menit per sesi ini.
         </p>
         <form onSubmit={(e) => void submit(e)} className="mt-4 grid gap-4">
           {error && <ErrorBox message={error} />}

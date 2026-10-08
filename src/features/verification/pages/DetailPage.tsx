@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Alert } from '@/components/ui/fields';
 import { Overlay, Spinner } from '@/components/ui/loading';
@@ -50,6 +50,32 @@ export default function DetailPage() {
   const [nik, setNik] = useState<string | null>(null);
   const [hasil, setHasil] = useState<{ nia?: string } | null>(null);
   const [stepUpOpen, setStepUpOpen] = useState(false);
+  // K8: grace Buka NIK (epoch ms kedaluwarsa + penanda aktif) untuk
+  // banner + buka langsung. Kedaluwarsa disembunyikan via timeout, bukan
+  // Date.now() saat render (aturan purity).
+  const [graceUntil, setGraceUntil] = useState<number | null>(null);
+  const [graceAktif, setGraceAktif] = useState(false);
+  const graceTimer = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (graceTimer.current !== null) window.clearTimeout(graceTimer.current);
+  }, []);
+
+  function terapkanGrace(expiresIn: number): void {
+    if (graceTimer.current !== null) window.clearTimeout(graceTimer.current);
+    setGraceUntil(Date.now() + expiresIn * 1000);
+    setGraceAktif(true);
+    graceTimer.current = window.setTimeout(() => {
+      setGraceAktif(false);
+      setGraceUntil(null);
+    }, expiresIn * 1000);
+  }
+
+  function matikanGrace(): void {
+    if (graceTimer.current !== null) window.clearTimeout(graceTimer.current);
+    setGraceAktif(false);
+    setGraceUntil(null);
+  }
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -68,6 +94,21 @@ export default function DetailPage() {
     void load();
   }, [load]);
 
+  // K8: sinkronkan banner grace (best-effort; gagal/fetch mati = diam).
+  async function sinkronGrace(): Promise<boolean> {
+    try {
+      const { nikGraceStatus } = await import('@/features/auth/api/authService');
+      const st = await nikGraceStatus();
+      if (st.active && st.expires_in > 0) {
+        terapkanGrace(st.expires_in);
+        return true;
+      }
+    } catch {
+      // Grace tidak aktif / offline — pemanggil yang memutuskan.
+    }
+    return false;
+  }
+
   async function lihatDokumen(key: string): Promise<void> {
     setError(null);
     try {
@@ -80,8 +121,23 @@ export default function DetailPage() {
 
   async function bukaNik(): Promise<void> {
     if (!item) return;
-    // NIK sensitif: verifikasi ulang dulu, token dipakai sekali.
-    setStepUpOpen(true);
+    // K8: tanpa banner aktif, sinkronkan dulu agar klik pertama setelah
+    // reload tak buta; server tetap sumber kebenaran (403 → modal).
+    setError(null);
+    try {
+      if (!graceAktif && !(await sinkronGrace())) {
+        setStepUpOpen(true);
+        return;
+      }
+      setNik((await revealNik(item.id)).nik);
+    } catch (e: unknown) {
+      if (e instanceof ApiError && e.status === 403 && /verifikasi ulang|kedaluwarsa/i.test(e.message)) {
+        matikanGrace();
+        setStepUpOpen(true);
+        return;
+      }
+      setError(e instanceof ApiError ? e.message : 'Gagal membuka NIK');
+    }
   }
 
   async function bukaNikDenganToken(token: string): Promise<void> {
@@ -89,8 +145,21 @@ export default function DetailPage() {
     setError(null);
     try {
       setNik((await revealNik(item.id, token)).nik);
+      // Verifikasi penuh baru saja sukses → sinkronkan banner grace.
+      await sinkronGrace();
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal membuka NIK');
+    }
+  }
+
+  async function kunciGrace(): Promise<void> {
+    setError(null);
+    try {
+      const { lockNikGrace } = await import('@/features/auth/api/authService');
+      await lockNikGrace();
+      matikanGrace();
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Gagal mengunci verifikasi');
     }
   }
 
@@ -137,6 +206,16 @@ export default function DetailPage() {
       </div>
 
       {error && <div className="mb-4"><ErrorBox message={error} /></div>}
+      {graceAktif && graceUntil !== null && (
+        <div className="mb-4">
+          <Alert kind="info">
+            <span>
+              Verifikasi NIK aktif sampai {new Date(graceUntil).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}.{' '}
+              <button type="button" onClick={() => void kunciGrace()} className="font-semibold underline">Kunci sekarang</button>
+            </span>
+          </Alert>
+        </div>
+      )}
 
       {hasil && (
         <div className="mb-4">
