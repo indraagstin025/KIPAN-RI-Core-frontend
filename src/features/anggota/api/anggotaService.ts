@@ -53,9 +53,15 @@ export function adminAnggotaActivity(id: number): Promise<ActivityLog[]> {
   return apiFetch<ActivityLog[]>(`/admin/anggota/${id}/activity`);
 }
 
-// adminKtaUrl: tiket unduh PDF KTA anggota (admin, tercatat audit).
-export function adminKtaUrl(id: number): Promise<{ download_url: string }> {
-  return apiFetch<{ download_url: string }>(`/admin/anggota/${id}/kta`);
+// adminKtaUrl: tiket unduh KTA anggota (admin, tercatat audit; format pdf|png).
+export function adminKtaUrl(id: number, format: 'pdf' | 'png' = 'pdf'): Promise<{ download_url: string }> {
+  return apiFetch<{ download_url: string }>(`/admin/anggota/${id}/kta?format=${format}`);
+}
+
+// adminRegenerateKta: paksa render ulang KTA satu anggota dengan template
+// aktif (Super/Nasional; menimpa objek lama).
+export function adminRegenerateKta(id: number): Promise<void> {
+  return apiFetch<void>(`/admin/anggota/${id}/kta/regen`, { method: 'POST' });
 }
 
 // resetMemberPassword (T1): menerbitkan tautan set-password (dikirim ke email

@@ -101,22 +101,24 @@ export function useDaftarForm(): DaftarForm {
   const initStep = draft ? Math.max(0, Math.min(draft.step, STEPS.length - 1)) : 0;
 
   const [step, setStep] = useState(initStep);
+  // FE-01: NIK, kontak, alamat, dan TTL tidak dipulihkan dari draf
+  // (tidak pernah disimpan) — selalu mulai kosong dan diketik ulang.
   const [nama, setNama] = useState(draft?.nama ?? '');
-  const [nik, setNik] = useState(draft?.nik ?? '');
-  const [tempat, setTempat] = useState(draft?.tempat ?? '');
-  const [tanggal, setTanggal] = useState(draft?.tanggal ?? '');
+  const [nik, setNik] = useState('');
+  const [tempat, setTempat] = useState('');
+  const [tanggal, setTanggal] = useState('');
   const [jk, setJk] = useState(draft?.jk ?? '');
   const [agama, setAgama] = useState(draft?.agama ?? '');
   const [pendidikan, setPendidikan] = useState(draft?.pendidikan ?? '');
   const [pekerjaan, setPekerjaan] = useState(draft?.pekerjaan ?? '');
-  const [alamat, setAlamat] = useState(draft?.alamat ?? '');
+  const [alamat, setAlamat] = useState('');
   const [prov, setProv] = useState(draft?.prov ?? '');
   const [kab, setKab] = useState(draft?.kab ?? '');
   const [kec, setKec] = useState(draft?.kec ?? '');
   const [desa, setDesa] = useState(draft?.desa ?? '');
-  const [kodepos, setKodepos] = useState(draft?.kodepos ?? '');
-  const [email, setEmail] = useState(draft?.email ?? '');
-  const [wa, setWa] = useState(draft?.wa ?? '');
+  const [kodepos, setKodepos] = useState('');
+  const [email, setEmail] = useState('');
+  const [wa, setWa] = useState('');
   const [kode, setKode] = useState('');
   const [motivasi, setMotivasi] = useState(draft?.motivasi ?? '');
   const [persyaratan, setPersyaratan] = useState<string[]>(draft?.persyaratan ?? []);
@@ -278,17 +280,18 @@ export function useDaftarForm(): DaftarForm {
   }, [desa, kec, kabupaten]);
 
   // Simpan draf setiap perubahan agar refresh tidak menghilangkan progres.
+  // FE-01: hanya field non-sensitif yang ditulis (lihat PERSIST_KEYS).
   useEffect(() => {
     if (hasil) return;
     const draftDocs = Object.fromEntries(
       (Object.keys(docs) as DokumenCategory[]).map((c) => [c, { key: docs[c].key, name: docs[c].name }]),
     ) as RegDraft['docs'];
     saveDraft({
-      step, nama, nik, tempat, tanggal, jk, agama, pendidikan, pekerjaan, alamat,
-      prov, kab, kec, desa, kodepos, email, wa, motivasi, persyaratan, docs: draftDocs,
+      step, nama, jk, agama, pendidikan, pekerjaan,
+      prov, kab, kec, desa, motivasi, persyaratan, docs: draftDocs,
     });
-  }, [step, nama, nik, tempat, tanggal, jk, agama, pendidikan, pekerjaan, alamat,
-    prov, kab, kec, desa, kodepos, email, wa, motivasi, persyaratan, docs, hasil]);
+  }, [step, nama, jk, agama, pendidikan, pekerjaan,
+    prov, kab, kec, desa, motivasi, persyaratan, docs, hasil]);
 
   return {
     draft, step, setStep,

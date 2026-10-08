@@ -31,6 +31,7 @@ export default function LangkahKontak({ form }: { form: DaftarForm }) {
             onChange={(e) => setKode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             placeholder="6-digit kode"
             inputMode="numeric"
+            autoComplete="one-time-code"
             maxLength={6}
             aria-invalid={isInvalid('otp') || undefined}
             className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm tracking-[0.3em] focus:outline-none focus:ring-2 sm:max-w-[220px] ${isInvalid('otp') ? 'border-kipan-red focus:border-kipan-red focus:ring-kipan-red/20' : 'border-kipan-border focus:border-kipan-blue focus:ring-kipan-blue/20'}`}

@@ -15,6 +15,7 @@ import {
   adminDeactivateAnggota,
   adminGetAnggota,
   adminKtaUrl,
+  adminRegenerateKta,
   resetMemberPassword,
 } from '../api/anggotaService';
 import AnggotaFormModal from '../components/AnggotaFormModal';
@@ -54,6 +55,8 @@ export default function AnggotaDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [resetMsg, setResetMsg] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
+  const [ktaMsg, setKtaMsg] = useState<string | null>(null);
+  const [regen, setRegen] = useState(false);
   const [unduh, setUnduh] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -119,16 +122,32 @@ export default function AnggotaDetailPage() {
     }
   }
 
-  async function unduhKta(): Promise<void> {
+  async function unduhKta(format: 'pdf' | 'png'): Promise<void> {
     if (!item) return;
     setUnduh(true);
     try {
-      const res = await adminKtaUrl(item.id);
+      const res = await adminKtaUrl(item.id, format);
       window.open(res.download_url, '_blank', 'noopener');
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Dokumen KTA belum tersedia');
     } finally {
       setUnduh(false);
+    }
+  }
+
+  async function regenKta(): Promise<void> {
+    if (!item) return;
+    if (!window.confirm('Render ulang KTA anggota ini dengan template aktif? Kartu lama akan ditimpa.')) return;
+    setRegen(true);
+    setError(null);
+    setKtaMsg(null);
+    try {
+      await adminRegenerateKta(item.id);
+      setKtaMsg('KTA berhasil diregenerasi dengan template aktif. Unduh ulang untuk melihatnya.');
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Gagal regenerasi KTA');
+    } finally {
+      setRegen(false);
     }
   }
 
@@ -194,7 +213,11 @@ export default function AnggotaDetailPage() {
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button variant="outline-navy" onClick={() => void unduhKta()} disabled={unduh}>{unduh ? 'Menyiapkan...' : 'Unduh PDF KTA'}</Button>
+          <Button variant="outline-navy" onClick={() => void unduhKta('png')} disabled={unduh}>{unduh ? 'Menyiapkan...' : 'Unduh PNG KTA'}</Button>
+          <Button variant="outline-navy" onClick={() => void unduhKta('pdf')} disabled={unduh}>{unduh ? 'Menyiapkan...' : 'Unduh PDF KTA'}</Button>
+          {(user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL') && (
+            <Button variant="outline-navy" onClick={() => void regenKta()} disabled={regen}>{regen ? 'Merender...' : 'Render Ulang KTA'}</Button>
+          )}
           <Button variant="outline-navy" onClick={() => setShowForm(true)}>Edit</Button>
           {item.status !== 'NONAKTIF' && <Button variant="outline-navy" onClick={() => void nonaktifkan()}>Nonaktifkan</Button>}
           {item.user_id && (
@@ -207,10 +230,10 @@ export default function AnggotaDetailPage() {
       </div>
 
       {error && <div className="mt-4"><ErrorBox message={error} /></div>}
-      {resetMsg && (
+      {(resetMsg || ktaMsg) && (
         <div className="mt-4 rounded-lg border border-kipan-green/40 bg-emerald-50 p-4 text-sm">
           <p className="font-bold text-kipan-green">Berhasil</p>
-          <p className="mt-1 text-kipan-text-dark">{resetMsg}</p>
+          <p className="mt-1 text-kipan-text-dark">{resetMsg ?? ktaMsg}</p>
         </div>
       )}
 

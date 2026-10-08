@@ -69,6 +69,7 @@ export default function DaftarPage() {
             <div className="mt-4">
               <Alert kind="info">
                 Melanjutkan isian yang tersimpan otomatis di perangkat ini.{' '}
+                Demi keamanan, NIK, kontak, dan alamat tidak disimpan dan perlu diketik ulang.{' '}
                 <button
                   type="button"
                   onClick={() => {

@@ -57,9 +57,10 @@ export function stepForKey(key: string): number {
 export function draftHasContent(d: RegDraft | null): boolean {
   if (!d) return false;
   if (d.step > 0) return true;
+  // FE-01: hanya kunci non-sensitif yang bisa ada di draf.
   const textKeys: Array<keyof Omit<RegDraft, 'step' | 'docs'>> = [
-    'nama', 'nik', 'tempat', 'tanggal', 'jk', 'agama', 'pendidikan', 'pekerjaan',
-    'alamat', 'prov', 'kab', 'kec', 'desa', 'kodepos', 'email', 'wa', 'motivasi',
+    'nama', 'jk', 'agama', 'pendidikan', 'pekerjaan',
+    'prov', 'kab', 'kec', 'desa', 'motivasi',
   ];
   if (textKeys.some((k) => d[k] && String(d[k]).trim() !== '')) return true;
   if ((d.persyaratan ?? []).length > 0) return true;

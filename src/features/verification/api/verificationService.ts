@@ -24,8 +24,10 @@ export function getDetail(id: number): Promise<PendaftaranDetail> {
   return apiFetch<PendaftaranDetail>(`/admin/pendaftaran/${id}`);
 }
 
-export function revealNik(id: number): Promise<{ nik: string }> {
-  return apiFetch<{ nik: string }>(`/admin/pendaftaran/${id}/nik`);
+export function revealNik(id: number, stepUpToken?: string): Promise<{ nik: string }> {
+  return apiFetch<{ nik: string }>(`/admin/pendaftaran/${id}/nik`, {
+    headers: stepUpToken ? { 'X-StepUp-Token': stepUpToken } : undefined,
+  });
 }
 
 export function processApproval(id: number, action: ApprovalAction, catatan = ''): Promise<ApprovalResult> {

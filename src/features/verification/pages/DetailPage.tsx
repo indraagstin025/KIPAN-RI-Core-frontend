@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { presignView } from '@/features/storage/api/storageService';
 import { ApiError } from '@/services/apiClient';
 import { getDetail, processApproval, revealNik } from '../api/verificationService';
+import StepUpModal from '@/features/auth/components/StepUpModal';
 import type { ApprovalAction, PendaftaranDetail } from '../types';
 
 const DOC_FIELDS: Array<{ field: keyof PendaftaranDetail; label: string }> = [
@@ -48,6 +49,7 @@ export default function DetailPage() {
   const [proses, setProses] = useState<ApprovalAction | null>(null);
   const [nik, setNik] = useState<string | null>(null);
   const [hasil, setHasil] = useState<{ nia?: string } | null>(null);
+  const [stepUpOpen, setStepUpOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -78,9 +80,15 @@ export default function DetailPage() {
 
   async function bukaNik(): Promise<void> {
     if (!item) return;
+    // NIK sensitif: verifikasi ulang dulu, token dipakai sekali.
+    setStepUpOpen(true);
+  }
+
+  async function bukaNikDenganToken(token: string): Promise<void> {
+    if (!item) return;
     setError(null);
     try {
-      setNik((await revealNik(item.id)).nik);
+      setNik((await revealNik(item.id, token)).nik);
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal membuka NIK');
     }
@@ -226,6 +234,12 @@ export default function DetailPage() {
         </Card>
       )}
       {proses !== null && <Overlay label="Memproses verifikasi... mohon tunggu." />}
+      <StepUpModal
+        open={stepUpOpen}
+        title="Buka NIK — verifikasi ulang"
+        onClose={() => setStepUpOpen(false)}
+        onToken={(tok) => void bukaNikDenganToken(tok)}
+      />
     </div>
   );
 }
