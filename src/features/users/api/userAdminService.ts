@@ -19,8 +19,12 @@ export function adminCreateUser(input: UserCreateInput): Promise<UserMutationRes
   return apiFetch<UserMutationResult>('/admin/users', { method: 'POST', data: input });
 }
 
-export function adminUpdateUser(id: string, input: UserUpdateInput): Promise<UserMutationResult> {
-  return apiFetch<UserMutationResult>(`/admin/users/${id}`, { method: 'PUT', data: input });
+export function adminUpdateUser(id: string, input: UserUpdateInput, stepUpToken?: string): Promise<UserMutationResult> {
+  return apiFetch<UserMutationResult>(`/admin/users/${id}`, {
+    method: 'PUT',
+    data: input,
+    headers: stepUpToken ? { 'X-StepUp-Token': stepUpToken } : undefined,
+  });
 }
 
 export function adminDeleteUser(id: string): Promise<void> {

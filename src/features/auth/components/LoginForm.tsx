@@ -4,6 +4,7 @@ import Button from '@/components/ui/button';
 import { Spinner } from '@/components/ui/loading';
 import { Field, TextInput } from '@/components/ui/fields';
 import { ErrorBox } from '@/components/ui/stateful';
+import { hasLoginErrors, validateLoginInput, type LoginFieldErrors } from '../lib/validasiLogin';
 import type { AuthUser } from '../types';
 
 interface LoginFormProps {
@@ -19,10 +20,19 @@ export default function LoginForm({ title, subtitle, submitLabel = 'Masuk', onSu
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
+    // Validasi lokal dulu: jangan tembak API untuk input yang pasti-422
+    // (hemat kuota rate-limit + pesan per-field yang jelas).
+    const invalid = validateLoginInput(email, password);
+    setFieldErrors(invalid);
+    if (hasLoginErrors(invalid)) {
+      setError(null);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -46,14 +56,16 @@ export default function LoginForm({ title, subtitle, submitLabel = 'Masuk', onSu
 
         <form onSubmit={(e) => void submit(e)} className="mt-6 grid gap-5">
           {error && <ErrorBox message={error} />}
-          <Field label="Email" required>
-            <TextInput value={email} onChange={setEmail} inputMode="email" placeholder="nama@kipan.id" />
+          <Field label="Email" required error={fieldErrors.email}>
+            <TextInput value={email} onChange={(v) => { setEmail(v); setFieldErrors((p) => ({ ...p, email: undefined })); }} inputMode="email" autoComplete="username" placeholder="nama@kipan.id" invalid={fieldErrors.email !== undefined} />
           </Field>
-          <Field label="Kata Sandi" required>
+          <Field label="Kata Sandi" required error={fieldErrors.password}>
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: undefined })); }}
+              autoComplete="current-password"
+              aria-invalid={fieldErrors.password !== undefined || undefined}
               className="w-full rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
             />
           </Field>

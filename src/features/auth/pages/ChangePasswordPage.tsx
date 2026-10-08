@@ -6,6 +6,7 @@ import { Card, ErrorBox, PageHeader } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError } from '@/services/apiClient';
 import { changePassword } from '../api/authService';
+import { unmetStrengthRules } from '../lib/validasiPassword';
 import { isAdminRole } from '../types';
 
 const inputCls = 'w-full rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20';
@@ -17,16 +18,34 @@ export default function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ oldPassword?: string; newPassword?: string; confirm?: string }>({});
   const [sukses, setSukses] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
-    setError(null);
-    if (newPassword !== confirm) {
-      setError('Konfirmasi kata sandi tidak cocok');
+    // Validasi lokal dulu agar tak membakar request sia-sia.
+    const invalid: { oldPassword?: string; newPassword?: string; confirm?: string } = {};
+    if (!oldPassword) invalid.oldPassword = 'Kata sandi saat ini wajib diisi.';
+    if (!newPassword) {
+      invalid.newPassword = 'Kata sandi baru wajib diisi.';
+    } else {
+      const unmet = unmetStrengthRules(newPassword);
+      if (unmet.length > 0) {
+        invalid.newPassword = `Belum memenuhi syarat: ${unmet.map((r) => r.label).join(', ')}.`;
+      }
+    }
+    if (!confirm) {
+      invalid.confirm = 'Konfirmasi wajib diisi.';
+    } else if (newPassword && newPassword !== confirm) {
+      invalid.confirm = 'Konfirmasi kata sandi tidak cocok.';
+    }
+    setFieldErrors(invalid);
+    if (invalid.oldPassword ?? invalid.newPassword ?? invalid.confirm) {
+      setError(null);
       return;
     }
+    setError(null);
     setLoading(true);
     try {
       await changePassword(oldPassword, newPassword);
@@ -50,14 +69,14 @@ export default function ChangePasswordPage() {
         <Card>
           <form onSubmit={(e) => void submit(e)} className="grid gap-5">
             {error && <ErrorBox message={error} />}
-            <Field label="Kata Sandi Saat Ini" required>
-              <input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className={inputCls} />
+            <Field label="Kata Sandi Saat Ini" required error={fieldErrors.oldPassword}>
+              <input type="password" value={oldPassword} onChange={(e) => { setOldPassword(e.target.value); setFieldErrors((p) => ({ ...p, oldPassword: undefined })); }} autoComplete="current-password" aria-invalid={fieldErrors.oldPassword !== undefined || undefined} className={inputCls} />
             </Field>
-            <Field label="Kata Sandi Baru" required hint="Min 8 karakter, huruf besar/kecil, angka, dan simbol.">
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputCls} />
+            <Field label="Kata Sandi Baru" required hint="Min 8 karakter, huruf besar/kecil, angka, dan simbol." error={fieldErrors.newPassword}>
+              <input type="password" value={newPassword} onChange={(e) => { setNewPassword(e.target.value); setFieldErrors((p) => ({ ...p, newPassword: undefined })); }} autoComplete="new-password" aria-invalid={fieldErrors.newPassword !== undefined || undefined} className={inputCls} />
             </Field>
-            <Field label="Konfirmasi Kata Sandi Baru" required>
-              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputCls} />
+            <Field label="Konfirmasi Kata Sandi Baru" required error={fieldErrors.confirm}>
+              <input type="password" value={confirm} onChange={(e) => { setConfirm(e.target.value); setFieldErrors((p) => ({ ...p, confirm: undefined })); }} autoComplete="new-password" aria-invalid={fieldErrors.confirm !== undefined || undefined} className={inputCls} />
             </Field>
             <button
               type="submit"

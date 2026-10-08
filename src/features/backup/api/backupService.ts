@@ -11,9 +11,11 @@ export function createBackup(): Promise<Backup> {
   return apiFetch<Backup>('/admin/backups', { method: 'POST' });
 }
 
-// downloadBackup: tiket unduh arsip backup.
-export function downloadBackup(id: number): Promise<{ download_url: string }> {
-  return apiFetch<{ download_url: string }>(`/admin/backups/${id}/download`);
+// downloadBackup: tiket unduh arsip backup (wajib step-up via header).
+export function downloadBackup(id: number, stepUpToken?: string): Promise<{ download_url: string }> {
+  return apiFetch<{ download_url: string }>(`/admin/backups/${id}/download`, {
+    headers: stepUpToken ? { 'X-StepUp-Token': stepUpToken } : undefined,
+  });
 }
 
 // deleteBackup: hapus arsip + riwayat.

@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebounced';
 import { ApiError } from '@/services/apiClient';
 import { adminCreateUser, adminDeleteUser, adminListUsers, adminUpdateUser, adminUserCounts } from '../api/userAdminService';
+import StepUpModal from '@/features/auth/components/StepUpModal';
 import type { AdminUser, AdminUserCounts } from '../types';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -75,6 +76,8 @@ export default function UserManagementPage() {
   const [generated, setGenerated] = useState<string | null>(null);
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [origRole, setOrigRole] = useState<string | null>(null);
+  const [stepUpOpen, setStepUpOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -111,6 +114,7 @@ export default function UserManagementPage() {
     setAksiError(null);
     setGenerated(null);
     if (u) {
+      setOrigRole(u.role);
       setForm({
         id: u.id, name: u.name, email: u.email, role: u.role,
         provinsi: u.provinsi_id ? String(u.provinsi_id) : '',
@@ -119,6 +123,7 @@ export default function UserManagementPage() {
       });
       if (u.provinsi_id) void listKabupaten(u.provinsi_id).then(setKabList).catch(() => setKabList([]));
     } else {
+      setOrigRole(null);
       setForm(EMPTY_FORM);
       setKabList([]);
     }
@@ -135,7 +140,7 @@ export default function UserManagementPage() {
     return r === 'ADMIN_PROVINSI' || r === 'ADMIN_KABUPATEN';
   }
 
-  async function submit(): Promise<void> {
+  async function submit(stepUpToken?: string): Promise<void> {
     setAksiError(null);
     if (form.name.trim().length < 2) {
       setAksiError('Nama wajib diisi (min. 2 karakter).');
@@ -153,6 +158,11 @@ export default function UserManagementPage() {
       setAksiError('Kabupaten/Kota wajib dipilih untuk role ini.');
       return;
     }
+    // Ubah role = operasi sensitif: wajib verifikasi ulang dulu.
+    if (form.id && origRole !== null && form.role !== origRole && !stepUpToken) {
+      setStepUpOpen(true);
+      return;
+    }
     setBusy(true);
     try {
       const payload = {
@@ -164,7 +174,7 @@ export default function UserManagementPage() {
         status: form.status,
       };
       const res = form.id
-        ? await adminUpdateUser(form.id, { ...payload, reset_password: form.resetPassword })
+        ? await adminUpdateUser(form.id, { ...payload, reset_password: form.resetPassword }, stepUpToken)
         : await adminCreateUser(payload);
       setShowForm(false);
       if (res.password) setGenerated(res.password);
@@ -348,6 +358,12 @@ export default function UserManagementPage() {
       )}
 
       {busy && !showForm && <Overlay label="Memproses..." />}
+      <StepUpModal
+        open={stepUpOpen}
+        title="Ubah role — verifikasi ulang"
+        onClose={() => setStepUpOpen(false)}
+        onToken={(tok) => { setStepUpOpen(false); return submit(tok); }}
+      />
     </div>
   );
 }

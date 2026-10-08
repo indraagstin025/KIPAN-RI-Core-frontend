@@ -6,18 +6,9 @@ import { Alert, Field } from '@/components/ui/fields';
 import { ErrorBox } from '@/components/ui/stateful';
 import { ApiError } from '@/services/apiClient';
 import { resetPassword, setPassword as setAccountPassword } from '../api/authService';
+import { STRENGTH_RULES } from '../lib/validasiPassword';
 
 const inputCls = 'w-full rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20';
-
-// Aturan kekuatan cermin backend (password_strength): min 8 (maks 128),
-// huruf besar, huruf kecil, angka, dan simbol.
-const STRENGTH_RULES: Array<{ key: string; label: string; ok: (v: string) => boolean }> = [
-  { key: 'len', label: 'Minimal 8 karakter', ok: (v) => v.length >= 8 && v.length <= 128 },
-  { key: 'upper', label: 'Ada huruf besar (A-Z)', ok: (v) => /[A-Z]/.test(v) },
-  { key: 'lower', label: 'Ada huruf kecil (a-z)', ok: (v) => /[a-z]/.test(v) },
-  { key: 'digit', label: 'Ada angka (0-9)', ok: (v) => /[0-9]/.test(v) },
-  { key: 'symbol', label: 'Ada simbol (mis. !@#)', ok: (v) => /[^A-Za-z0-9]/.test(v) },
-];
 
 export default function ResetPasswordPage({ mode = 'reset' }: { mode?: 'reset' | 'set' }) {
   const isSet = mode === 'set';
@@ -95,7 +86,7 @@ export default function ResetPasswordPage({ mode = 'reset' }: { mode?: 'reset' |
               </Field>
             )}
             <Field label="Kata Sandi Baru" required>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className={inputCls} />
               <ul className="mt-2 space-y-1" aria-live="polite">
                 {STRENGTH_RULES.map((r) => {
                   const ok = r.ok(password);
@@ -108,7 +99,7 @@ export default function ResetPasswordPage({ mode = 'reset' }: { mode?: 'reset' |
               </ul>
             </Field>
             <Field label="Konfirmasi Kata Sandi Baru" required>
-              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputCls} />
+              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" className={inputCls} />
             </Field>
             <Button type="submit" variant="primary" disabled={loading} className="w-full">
               {loading ? (<span className="inline-flex items-center gap-2"><Spinner size={15} light /> Menyimpan...</span>) : 'Simpan Kata Sandi Baru'}

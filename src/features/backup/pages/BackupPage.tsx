@@ -5,6 +5,7 @@ import { Spinner } from '@/components/ui/loading';
 import { ErrorBox, Loading, PageHeader, Pagination } from '@/components/ui/stateful';
 import { ApiError } from '@/services/apiClient';
 import { createBackup, deleteBackup, downloadBackup, listBackups } from '../api/backupService';
+import StepUpModal from '@/features/auth/components/StepUpModal';
 import type { Backup } from '../types';
 
 function formatSize(bytes: number): string {
@@ -22,6 +23,7 @@ export default function BackupPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  const [unduhTarget, setUnduhTarget] = useState<Backup | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,8 +62,16 @@ export default function BackupPage() {
   }
 
   async function unduh(b: Backup): Promise<void> {
+    // Arsip berisi PII massal: verifikasi ulang dulu, token dipakai sekali.
+    setUnduhTarget(b);
+  }
+
+  async function unduhDenganToken(token: string): Promise<void> {
+    const b = unduhTarget;
+    if (!b) return;
+    setUnduhTarget(null);
     try {
-      const res = await downloadBackup(b.id);
+      const res = await downloadBackup(b.id, token);
       window.open(res.download_url, '_blank', 'noopener');
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal mengunduh backup');
@@ -136,6 +146,12 @@ export default function BackupPage() {
       )}
 
       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      <StepUpModal
+        open={unduhTarget !== null}
+        title="Unduh backup — verifikasi ulang"
+        onClose={() => setUnduhTarget(null)}
+        onToken={(tok) => void unduhDenganToken(tok)}
+      />
     </div>
   );
 }

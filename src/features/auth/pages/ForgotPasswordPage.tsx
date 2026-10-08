@@ -6,15 +6,25 @@ import { Alert, Field, TextInput } from '@/components/ui/fields';
 import { ErrorBox } from '@/components/ui/stateful';
 import { ApiError } from '@/services/apiClient';
 import { forgotPassword } from '../api/authService';
+import { validateEmailField } from '../lib/validasiPassword';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | undefined>(undefined);
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
+    // Validasi lokal dulu: jangan bakar kuota rate-limit reset (3+5)
+    // untuk email yang pasti-422.
+    const invalid = validateEmailField(email);
+    setEmailError(invalid);
+    if (invalid) {
+      setError(null);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -50,8 +60,8 @@ export default function ForgotPasswordPage() {
         ) : (
           <form onSubmit={(e) => void submit(e)} className="mt-6 grid gap-5">
             {error && <ErrorBox message={error} />}
-            <Field label="Email" required>
-              <TextInput value={email} onChange={setEmail} inputMode="email" placeholder="nama@kipan.id" />
+            <Field label="Email" required error={emailError}>
+              <TextInput value={email} onChange={(v) => { setEmail(v); setEmailError(undefined); }} inputMode="email" autoComplete="email" placeholder="nama@kipan.id" invalid={emailError !== undefined} />
             </Field>
             <Button type="submit" variant="primary" disabled={loading} className="w-full">
               {loading ? (<span className="inline-flex items-center gap-2"><Spinner size={15} light /> Mengirim...</span>) : 'Kirim Tautan Reset'}

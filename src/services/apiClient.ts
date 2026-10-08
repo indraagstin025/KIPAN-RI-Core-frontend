@@ -30,7 +30,14 @@ function toApiError(err: unknown): ApiError {
         const status = ax.response?.status ?? 0;
         const data = ax.response?.data;
         if (status === 0) {
-            return new ApiError(0, 'NETWORK_ERROR', 'Tidak dapat terhubung ke server. Periksa koneksi Anda.');
+            // N3: bedakan offline vs server tak terjangkau (katalog §19.3).
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                return new ApiError(0, 'OFFLINE', 'Anda sedang offline. Perubahan tersimpan lokal dan dikirim saat online.');
+            }
+            return new ApiError(0, 'SERVER_UNREACHABLE', 'Server tidak merespons dalam 15 detik. Coba lagi.');
+        }
+        if (status === 503) {
+            return new ApiError(status, data?.code ?? 'UNAVAILABLE', 'Layanan sementara tidak tersedia. Coba beberapa saat lagi.', {});
         }
         const fields: Record<string, string> = {};
         for (const fe of data?.errors ?? []) {
@@ -58,6 +65,10 @@ api.interceptors.request.use((config) => {
 
 let refreshing: Promise<string | null> | null = null;
 
+export function refreshAccessToken(): Promise<string | null> {
+  return doRefresh();
+}
+
 function doRefresh(): Promise<string | null> {
     if (!refreshing) {
         refreshing = axios
@@ -69,6 +80,12 @@ function doRefresh(): Promise<string | null> {
             })
             .catch(() => {
                 setAccessToken(null);
+                // N3: JANGAN logout saat sekadar offline — refresh gagal karena
+                // jaringan, bukan sesi mati. Sesi mati asli (401/403 + online)
+                // tetap memicu auth:expired seperti sebelumnya.
+                if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && !navigator.onLine) {
+                    return null;
+                }
                 // A3: refresh gagal = sesi mati. Beri tahu AuthContext agar
                 // keluar otomatis (hindari sesi "zombie").
                 if (typeof window !== 'undefined') {
@@ -96,6 +113,7 @@ api.interceptors.response.use(
       url.includes('/auth/login') ||
       url.includes('/auth/logout') ||
       url.includes('/auth/refresh') ||
+      url.includes('/auth/mfa/verify') ||
       url.includes('/auth/forgot-password') ||
       url.includes('/auth/reset-password');
     if (err.response?.status === 401 && original && !original._retry && !skipRefresh) {

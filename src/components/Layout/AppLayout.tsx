@@ -22,7 +22,10 @@ const ADMIN_NAV: NavItem[] = [
 
 const USER_NAV: NavItem[] = [{ to: '/akun/kta', label: 'KTA Saya' }];
 
-const ACCOUNT_NAV: NavItem[] = [{ to: '/akun/password', label: 'Ganti Kata Sandi' }];
+const ACCOUNT_NAV: NavItem[] = [
+  { to: '/akun/password', label: 'Ganti Kata Sandi' },
+  { to: '/akun/sesi', label: 'Sesi Aktif' },
+];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -39,7 +42,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const rolesNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/roles', label: 'Role & Wewenang' }] : [];
   const organisasiNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/organisasi', label: 'Profil Organisasi' }] : [];
   const backupNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/backup', label: 'Database Backup' }] : [];
-  const nav = admin ? [...ADMIN_NAV, ...wilayahNav, ...jabatanNav, ...usersNav, ...outboxNav, ...auditNav, ...rolesNav, ...organisasiNav, ...backupNav, ...ACCOUNT_NAV] : [...USER_NAV, ...ACCOUNT_NAV];
+  const ktaTemplateNav: NavItem[] = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL' ? [{ to: '/admin/kta-template', label: 'Template KTA' }] : [];
+  const mfaNav: NavItem[] = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL' ? [{ to: '/akun/keamanan', label: 'Keamanan MFA' }] : [];
+  const nav = admin ? [...ADMIN_NAV, ...wilayahNav, ...jabatanNav, ...usersNav, ...outboxNav, ...auditNav, ...rolesNav, ...organisasiNav, ...backupNav, ...ktaTemplateNav, ...ACCOUNT_NAV, ...mfaNav] : [...USER_NAV, ...ACCOUNT_NAV];
 
   async function onLogout(): Promise<void> {
     const isAdmin = isAdminRole(user?.role);

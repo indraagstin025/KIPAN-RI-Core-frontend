@@ -3,9 +3,12 @@ import AppLayout from './components/Layout/AppLayout';
 import RequireAuth from './components/guards/RequireAuth';
 import RequireRole from './components/guards/RequireRole';
 import ScrollToTop from './components/util/ScrollToTop';
+import OfflineBanner from './components/util/OfflineBanner';
 import { AuthProvider } from './context/AuthContext';
 import { ADMIN_ROLES } from './features/auth/types';
 import ChangePasswordPage from './features/auth/pages/ChangePasswordPage';
+import MfaSetupPage from './features/auth/pages/MfaSetupPage';
+import SessionsPage from './features/auth/pages/SessionsPage';
 import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
 import LoginPage from './features/auth/pages/LoginPage';
 import AdminLoginShortcut from './features/auth/components/AdminLoginShortcut';
@@ -14,7 +17,8 @@ import AnggotaDetailPage from './features/anggota/pages/AnggotaDetailPage';
 import AnggotaListPage from './features/anggota/pages/AnggotaListPage';
 import CekAnggotaPage from './features/anggota/pages/CekAnggotaPage';
 import KtaSayaPage from './features/kta/pages/KtaSayaPage';
-import VerifikasiKtaPage from './features/kta/pages/VerifikasiKtaPage';
+import TemplatePage from './features/kta/pages/TemplatePage';
+import ValidasiKtaPage from './features/kta/pages/ValidasiKtaPage';
 import JabatanPage from './features/kepengurusan/pages/JabatanPage';
 import PengurusListPage from './features/kepengurusan/pages/PengurusListPage';
 import PengurusDetailPage from './features/kepengurusan/pages/PengurusDetailPage';
@@ -52,6 +56,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <ScrollToTop />
+        <OfflineBanner />
         <AdminLoginShortcut />
         <Routes>
           {/* Publik */}
@@ -59,7 +64,12 @@ export default function App() {
           <Route path="/daftar" element={<DaftarPage />} />
           <Route path="/lacak" element={<LacakPage />} />
           <Route path="/revisi" element={<RevisiPage />} />
-          <Route path="/verifikasi-kta" element={<VerifikasiKtaPage />} />
+          <Route path="/verifikasi-kta" element={<ValidasiKtaPage />} />
+          {/* Validasi KTA dari QR kartu: /validasi-kta/{nia}?sig=… (QR baru)
+              dan /v/{nia}?sig=… (kartu lama) — dua-duanya halaman yang sama. */}
+          <Route path="/validasi-kta" element={<ValidasiKtaPage />} />
+          <Route path="/validasi-kta/:nia" element={<ValidasiKtaPage />} />
+          <Route path="/v/:nia" element={<ValidasiKtaPage />} />
           <Route path="/anggota" element={<CekAnggotaPage />} />
           <Route path="/profil" element={<OrganisasiPublicPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -74,6 +84,7 @@ export default function App() {
           <Route path="/admin/roles" element={<AdminOnly><RequireRole roles={['SUPER_ADMIN']}><RolePage /></RequireRole></AdminOnly>} />
           <Route path="/admin/organisasi" element={<AdminOnly><RequireRole roles={['SUPER_ADMIN']}><OrganisasiPage /></RequireRole></AdminOnly>} />
           <Route path="/admin/backup" element={<AdminOnly><RequireRole roles={['SUPER_ADMIN']}><BackupPage /></RequireRole></AdminOnly>} />
+          <Route path="/admin/kta-template" element={<AdminOnly><RequireRole roles={['SUPER_ADMIN', 'ADMIN_NASIONAL']}><TemplatePage /></RequireRole></AdminOnly>} />
           <Route path="/admin/pendaftaran" element={<AdminOnly><AntreanPage /></AdminOnly>} />
           <Route path="/admin/pendaftaran/:id" element={<AdminOnly><DetailPage /></AdminOnly>} />
           <Route path="/admin/anggota" element={<AdminOnly><AnggotaListPage /></AdminOnly>} />
@@ -100,6 +111,14 @@ export default function App() {
           <Route
             path="/akun/password"
             element={<RequireAuth><AppLayout><ChangePasswordPage /></AppLayout></RequireAuth>}
+          />
+          <Route
+            path="/akun/keamanan"
+            element={<RequireAuth><RequireRole roles={['SUPER_ADMIN', 'ADMIN_NASIONAL']}><AppLayout><MfaSetupPage /></AppLayout></RequireRole></RequireAuth>}
+          />
+          <Route
+            path="/akun/sesi"
+            element={<RequireAuth><AppLayout><SessionsPage /></AppLayout></RequireAuth>}
           />
           <Route
             path="/akun/kta"
