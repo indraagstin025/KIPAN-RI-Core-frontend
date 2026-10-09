@@ -108,7 +108,11 @@ export default function LaporanPage() {
           <p className="text-sm font-bold text-kipan-text-dark">Anomali NIA (kode NIK ≠ kode domisili)</p>
           <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">{data.anomali_count}</span>
         </div>
-        {data.anomali_nia.length === 0 ? (
+        {/*
+          anomali_nia dinormalisasi (backend menjamin [], tapi kontrak JSON
+          tak boleh me-white-screen halaman bila null — regresi 09 Okt 2026).
+        */}
+        {(data.anomali_nia ?? []).length === 0 ? (
           <p className="text-sm text-kipan-text-muted">Tidak ada anomali terdeteksi.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -117,7 +121,7 @@ export default function LaporanPage() {
                 <tr><th className="py-2 pr-4">NIA</th><th className="py-2 pr-4">Nama</th><th className="py-2 pr-4">Kode NIK</th><th className="py-2">Kode Domisili</th></tr>
               </thead>
               <tbody>
-                {data.anomali_nia.map((a) => (
+                {(data.anomali_nia ?? []).map((a) => (
                   <tr key={a.nia} className="border-t border-kipan-border">
                     <td className="py-2 pr-4 font-mono text-xs text-kipan-navy">{a.nia}</td>
                     <td className="py-2 pr-4 font-semibold text-kipan-text-dark">{a.nama}</td>
