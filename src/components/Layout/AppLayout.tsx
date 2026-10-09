@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     const prevZoom = el.style.zoom;
     const prevBg = document.body.style.background;
     el.style.zoom = '0.9';
-    document.body.style.background = '#f5f6f8';
+    document.body.style.background = '#ffffff';
     return () => {
       el.style.zoom = prevZoom;
       document.body.style.background = prevBg;
@@ -124,7 +124,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }`;
 
   return (
-    <div className="flex min-h-screen bg-kipan-soft-gray">
+    <div className="flex min-h-screen bg-white">
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-[300px] transform flex-col overflow-x-hidden bg-kipan-navy p-4 transition-all duration-200 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-[76px] lg:px-3' : ''}`}>
         <Link to="/" className={`flex items-center gap-2 rounded-lg px-1 py-2 ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}>
           <img src="/logo-kipan.jpg" alt="Logo KIPAN" className={`shrink-0 rounded-full border border-white/30 bg-white object-cover ${collapsed ? 'h-10 w-10' : 'h-10 w-10 lg:h-12 lg:w-12'}`} />
