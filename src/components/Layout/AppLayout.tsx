@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   ArchiveIcon,
@@ -65,6 +65,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // Skala admin 90% (setara zoom-out browser sekali): lebih banyak konten
+  // muat di layar 2560x1440. Dipasang di <html> (bukan kontainer) agar
+  // elemen fixed (modal/dropdown/drawer) ikut ter-scale dengan benar.
+  // Cleanup mengembalikan semula saat keluar dari shell admin/akun.
+  useEffect(() => {
+    const el = document.documentElement;
+    const prev = el.style.zoom;
+    el.style.zoom = '0.9';
+    return () => {
+      el.style.zoom = prev;
+    };
+  }, []);
 
   function toggleCollapsed(): void {
     setCollapsed((v) => {
