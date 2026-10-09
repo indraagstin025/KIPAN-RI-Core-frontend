@@ -14,7 +14,7 @@ import {
   PersonIcon,
   PieChartIcon,
 } from '@radix-ui/react-icons';
-import { Card, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
+import { ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError } from '@/services/apiClient';
 import { checkHealth } from '@/features/system/api/systemService';
@@ -48,7 +48,7 @@ function StatCard({ icon: Icon, label, value, sub, pill, pillTone = 'blue' }: {
   icon: IconType; label: string; value: number | string; sub?: string; pill?: string; pillTone?: keyof typeof PILL_TONE;
 }) {
   return (
-    <div className="rounded-2xl border border-kipan-border bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-kipan-border bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-kipan-soft-blue text-kipan-blue">
@@ -198,7 +198,7 @@ export default function DashboardPage() {
             desc="Ringkasan keanggotaan dan antrean verifikasi sesuai cakupan wilayah Anda."
           />
         </div>
-        <div className="hidden items-center gap-2.5 rounded-2xl border border-kipan-border bg-white px-4 py-2.5 shadow-sm md:flex">
+        <div className="hidden items-center gap-2.5 rounded-xl border border-kipan-border bg-white px-4 py-2.5 shadow-sm md:flex">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-kipan-soft-blue text-kipan-blue">
             <CalendarIcon className="h-4 w-4" aria-hidden="true" />
           </span>
@@ -250,7 +250,7 @@ export default function DashboardPage() {
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2 3xl:grid-cols-4">
         {/* Distribusi pendaftaran per status */}
-        <Card>
+        <div className="rounded-xl border border-kipan-border bg-white p-5 shadow-sm">
           <PanelTitle icon={BarChartIcon} title="Pendaftaran per Status" />
           <div className="space-y-3">
             {data.pendaftaran_by_status.length === 0 ? (
@@ -262,10 +262,10 @@ export default function DashboardPage() {
             )}
           </div>
           <p className="mt-3 text-right text-[11px] text-kipan-text-muted">Total {totalStatus} pendaftaran</p>
-        </Card>
+        </div>
 
         {/* Tren bulanan */}
-        <Card>
+        <div className="rounded-xl border border-kipan-border bg-white p-5 shadow-sm">
           <PanelTitle
             icon={PieChartIcon}
             title={`Tren Pendaftaran (${rentang} Bulan)`}
@@ -286,10 +286,10 @@ export default function DashboardPage() {
           ) : (
             <TrendChart values={tren.map((t) => t.jumlah)} labels={tren.map((t) => shortBulan(t.bulan))} />
           )}
-        </Card>
+        </div>
 
         {/* Distribusi wilayah */}
-        <Card>
+        <div className="rounded-xl border border-kipan-border bg-white p-5 shadow-sm">
           <PanelTitle icon={GlobeIcon} title={`Distribusi Anggota — ${data.wilayah_label}`} />
           <div className="space-y-3">
             {data.wilayah_distribusi.length === 0 ? (
@@ -308,10 +308,10 @@ export default function DashboardPage() {
               ))
             )}
           </div>
-        </Card>
+        </div>
 
         {/* Pendaftaran terbaru */}
-        <Card>
+        <div className="rounded-xl border border-kipan-border bg-white p-5 shadow-sm">
           <PanelTitle
             icon={ClipboardIcon}
             title="Pendaftaran Terbaru"
@@ -358,7 +358,7 @@ export default function DashboardPage() {
               </table>
             </div>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   );
