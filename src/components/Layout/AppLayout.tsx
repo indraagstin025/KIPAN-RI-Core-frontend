@@ -69,13 +69,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // Skala admin 90% (setara zoom-out browser sekali): lebih banyak konten
   // muat di layar 2560x1440. Dipasang di <html> (bukan kontainer) agar
   // elemen fixed (modal/dropdown/drawer) ikut ter-scale dengan benar.
-  // Cleanup mengembalikan semula saat keluar dari shell admin/akun.
+  // Efek samping: unit vh ikut mengecil (h-screen = 90%) — maka sidebar
+  // memakai inset-y-0 (jangkar viewport, bukan vh) + body disamakan dengan
+  // bg konten agar tak ada jahitan putih. Cleanup mengembalikan semula.
   useEffect(() => {
     const el = document.documentElement;
-    const prev = el.style.zoom;
+    const prevZoom = el.style.zoom;
+    const prevBg = document.body.style.background;
     el.style.zoom = '0.9';
+    document.body.style.background = '#f5f6f8';
     return () => {
-      el.style.zoom = prev;
+      el.style.zoom = prevZoom;
+      document.body.style.background = prevBg;
     };
   }, []);
 
@@ -120,7 +125,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-kipan-soft-gray">
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col overflow-x-hidden bg-kipan-navy p-4 transition-all duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-[76px] lg:px-3' : ''}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col overflow-x-hidden bg-kipan-navy p-4 transition-all duration-200 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-[76px] lg:px-3' : ''}`}>
         <Link to="/" className="flex items-center gap-3 rounded-lg px-2 py-2">
           <img src="/logo-kipan.jpg" alt="Logo KIPAN" className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white object-cover" />
           <span className={`flex-col leading-tight ${collapsed ? 'lg:hidden' : 'flex'}`}>
@@ -148,7 +153,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {open && <button type="button" aria-label="Tutup menu" className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setOpen(false)} />}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* Kolom konten di-offset selebar sidebar (sidebar fixed di luar flow):
+          sinkron dengan animasi collapse. Mobile tanpa offset (drawer overlay). */}
+      <div className={`flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 ${collapsed ? 'lg:pl-[76px]' : 'lg:pl-64'}`}>
         {/* Navbar admin gaya CMS (navy blur, sticky): brand ringkas +
             lonceng + menu profil. Tanpa link landing. */}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-white/15 bg-kipan-navy/95 px-4 py-3 shadow-lg backdrop-blur-md lg:px-6">
