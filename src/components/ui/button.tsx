@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { isSafeHref } from './safeUrl';
 
 type Variant = 'primary' | 'accent' | 'outline-white' | 'outline-navy' | 'ghost';
 
@@ -31,6 +32,14 @@ export function Button({ to, href, variant = 'primary', children, className = ''
     );
   }
   if (href) {
+    // Skema tak dikenal = render <button> tanpa navigasi (fail-closed).
+    if (!isSafeHref(href)) {
+      return (
+        <button type={type} disabled={disabled} onClick={() => onClick?.()} className={cls}>
+          {children}
+        </button>
+      );
+    }
     return (
       <a href={href} className={cls}>
         {children}
