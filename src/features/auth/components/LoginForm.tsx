@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import Button from '@/components/ui/button';
 import { Spinner } from '@/components/ui/loading';
 import TurnstileWidget from '@/components/ui/TurnstileWidget';
+import { useTurnstileGate } from '@/components/ui/useTurnstileGate';
 import { Field, TextInput } from '@/components/ui/fields';
 import { ErrorBox } from '@/components/ui/stateful';
-import { TURNSTILE_SITE_KEY } from '@/config/env';
 import { ApiError } from '@/services/apiClient';
 import { hasLoginErrors, validateLoginInput, type LoginFieldErrors } from '../lib/validasiLogin';
 import type { AuthUser } from '../types';
@@ -28,14 +28,7 @@ export default function LoginForm({ title, subtitle, submitLabel = 'Masuk', onSu
   const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
   const [loading, setLoading] = useState(false);
   const [perluCaptcha, setPerluCaptcha] = useState(false);
-  const [tsToken, setTsToken] = useState<string | null>(null);
-  const [tsKey, setTsKey] = useState(0);
-  const butuhCaptcha = TURNSTILE_SITE_KEY !== '';
-
-  function segarkanWidget(): void {
-    setTsToken(null);
-    setTsKey((k) => k + 1);
-  }
+  const gate = useTurnstileGate();
 
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -47,20 +40,20 @@ export default function LoginForm({ title, subtitle, submitLabel = 'Masuk', onSu
       setError(null);
       return;
     }
-    if (perluCaptcha && butuhCaptcha && tsToken === null) {
+    if (perluCaptcha && gate.enabled && gate.token === null) {
       setError('Selesaikan verifikasi keamanan di bawah dulu.');
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const user = await onSubmit(email.trim(), password, tsToken ?? undefined);
+      const user = await onSubmit(email.trim(), password, gate.token ?? undefined);
       onSuccess(user);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 422 && /verifikasi keamanan/i.test(err.message)) {
         // Gerbang adaptif trip: tampilkan widget, token lama hangus.
         setPerluCaptcha(true);
-        segarkanWidget();
+        gate.reset();
       }
       setError(err instanceof Error ? err.message : 'Login gagal');
     } finally {
@@ -95,8 +88,8 @@ export default function LoginForm({ title, subtitle, submitLabel = 'Masuk', onSu
           <p className="-mt-2 text-right text-xs">
             <Link to="/lupa-password" className="font-semibold text-kipan-blue hover:underline">Lupa kata sandi?</Link>
           </p>
-          {perluCaptcha && butuhCaptcha && (
-            <TurnstileWidget key={tsKey} onToken={(t) => setTsToken(t)} />
+          {perluCaptcha && gate.enabled && (
+            <TurnstileWidget key={gate.widgetKey} onToken={(t) => gate.handleToken(t)} />
           )}
           <Button type="submit" variant="primary" disabled={loading} className="w-full">
             {loading ? (<span className="inline-flex items-center gap-2"><Spinner size={15} light /> Memproses...</span>) : submitLabel}

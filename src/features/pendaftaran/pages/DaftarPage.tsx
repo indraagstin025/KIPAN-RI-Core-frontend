@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import LandingLayout from '@/components/Layout/LandingLayout';
 import Button from '@/components/ui/button';
 import { Overlay, Spinner } from '@/components/ui/loading';
-import { TURNSTILE_SITE_KEY } from '@/config/env';
+import { useTurnstileGate } from '@/components/ui/useTurnstileGate';
 import { clearDraft } from '../lib/draft';
 import { draftHasContent } from '../lib/daftarMapping';
 import { STEPS, useDaftarForm } from '../hooks/useDaftarForm';
@@ -22,16 +21,13 @@ export default function DaftarPage() {
   const { unggah, submit } = useDaftarSubmit(form);
   const { step, setStep, draft, hasil, umum, setUmum, kirim, wilayahError, touchStep, setSubmitted } = form;
   // Token Turnstile lapis 2 (submit): sekali pakai, remount tiap percobaan.
-  const [submitTs, setSubmitTs] = useState<string | null>(null);
-  const [submitTsKey, setSubmitTsKey] = useState(0);
-  const butuhCaptchaSubmit = TURNSTILE_SITE_KEY !== '';
-  const siapKirim = !kirim && (!butuhCaptchaSubmit || submitTs !== null);
+  const gate = useTurnstileGate();
+  const siapKirim = !kirim && (!gate.enabled || gate.token !== null);
 
   async function kirimPendaftaran(): Promise<void> {
     if (!siapKirim) return;
-    await submit(submitTs ?? undefined);
-    setSubmitTs(null);
-    setSubmitTsKey((k) => k + 1);
+    await submit(gate.token ?? undefined);
+    gate.reset();
   }
 
   function lanjut(): void {
@@ -118,10 +114,10 @@ export default function DaftarPage() {
             {step === 2 && <LangkahDokumen form={form} unggah={unggah} />}
             {step === 3 && <LangkahPersyaratan form={form} />}
             {step === 4 && <LangkahRingkasan form={form} />}
-            {step === 4 && butuhCaptchaSubmit && (
+            {step === 4 && gate.enabled && (
               <div className="mt-5 rounded-xl border border-kipan-border bg-kipan-soft-blue p-4">
                 <p className="text-sm font-bold text-kipan-navy">Verifikasi keamanan terakhir</p>
-                <TurnstileWidget key={submitTsKey} onToken={(t) => setSubmitTs(t)} />
+                <TurnstileWidget key={gate.widgetKey} onToken={(t) => gate.handleToken(t)} />
               </div>
             )}
 
