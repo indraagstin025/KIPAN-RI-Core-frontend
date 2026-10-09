@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebounced';
 import { ApiError } from '@/services/apiClient';
 import { adminCreateUser, adminDeleteUser, adminListUsers, adminUpdateUser, adminUserCounts } from '../api/userAdminService';
-import StepUpModal from '@/features/auth/components/StepUpModal';
+import StepUpModal from '@/components/ui/StepUpModal';
 import type { AdminUser, AdminUserCounts } from '../types';
 
 const ROLE_LABELS: Record<string, string> = {

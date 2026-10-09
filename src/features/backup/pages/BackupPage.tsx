@@ -5,7 +5,7 @@ import { Spinner } from '@/components/ui/loading';
 import { ErrorBox, Loading, PageHeader, Pagination } from '@/components/ui/stateful';
 import { ApiError } from '@/services/apiClient';
 import { createBackup, deleteBackup, downloadBackup, getBackup, listBackups } from '../api/backupService';
-import StepUpModal from '@/features/auth/components/StepUpModal';
+import StepUpModal from '@/components/ui/StepUpModal';
 import type { Backup } from '../types';
 
 function formatSize(bytes: number): string {

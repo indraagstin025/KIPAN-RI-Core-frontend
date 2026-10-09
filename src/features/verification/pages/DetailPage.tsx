@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { presignView } from '@/features/storage/api/storageService';
 import { ApiError } from '@/services/apiClient';
 import { getDetail, processApproval, revealNik } from '../api/verificationService';
-import StepUpModal from '@/features/auth/components/StepUpModal';
+import StepUpModal from '@/components/ui/StepUpModal';
 import type { ApprovalAction, PendaftaranDetail } from '../types';
 
 const DOC_FIELDS: Array<{ field: keyof PendaftaranDetail; label: string }> = [
