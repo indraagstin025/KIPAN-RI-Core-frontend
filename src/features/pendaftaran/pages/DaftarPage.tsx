@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import LandingLayout from '@/components/Layout/LandingLayout';
 import Button from '@/components/ui/button';
 import { Overlay, Spinner } from '@/components/ui/loading';
+import { TURNSTILE_SITE_KEY } from '@/config/env';
 import { clearDraft } from '../lib/draft';
 import { draftHasContent } from '../lib/daftarMapping';
 import { STEPS, useDaftarForm } from '../hooks/useDaftarForm';
@@ -12,12 +14,25 @@ import LangkahDokumen from '../components/LangkahDokumen';
 import LangkahKontak from '../components/LangkahKontak';
 import LangkahPersyaratan from '../components/LangkahPersyaratan';
 import LangkahRingkasan from '../components/LangkahRingkasan';
+import TurnstileWidget from '../components/TurnstileWidget';
 import { Alert, Stepper } from '../components/fields';
 
 export default function DaftarPage() {
   const form = useDaftarForm();
   const { unggah, submit } = useDaftarSubmit(form);
   const { step, setStep, draft, hasil, umum, setUmum, kirim, wilayahError, touchStep, setSubmitted } = form;
+  // Token Turnstile lapis 2 (submit): sekali pakai, remount tiap percobaan.
+  const [submitTs, setSubmitTs] = useState<string | null>(null);
+  const [submitTsKey, setSubmitTsKey] = useState(0);
+  const butuhCaptchaSubmit = TURNSTILE_SITE_KEY !== '';
+  const siapKirim = !kirim && (!butuhCaptchaSubmit || submitTs !== null);
+
+  async function kirimPendaftaran(): Promise<void> {
+    if (!siapKirim) return;
+    await submit(submitTs ?? undefined);
+    setSubmitTs(null);
+    setSubmitTsKey((k) => k + 1);
+  }
 
   function lanjut(): void {
     setUmum(null);
@@ -103,6 +118,12 @@ export default function DaftarPage() {
             {step === 2 && <LangkahDokumen form={form} unggah={unggah} />}
             {step === 3 && <LangkahPersyaratan form={form} />}
             {step === 4 && <LangkahRingkasan form={form} />}
+            {step === 4 && butuhCaptchaSubmit && (
+              <div className="mt-5 rounded-xl border border-kipan-border bg-kipan-soft-blue p-4">
+                <p className="text-sm font-bold text-kipan-navy">Verifikasi keamanan terakhir</p>
+                <TurnstileWidget key={submitTsKey} onToken={(t) => setSubmitTs(t)} />
+              </div>
+            )}
 
             <div className="mt-8 flex flex-col-reverse justify-between gap-3 sm:flex-row">
               <div>
@@ -131,7 +152,7 @@ export default function DaftarPage() {
               {step < 4 ? (
                 <Button variant="primary" onClick={lanjut}>Lanjut →</Button>
               ) : (
-                <Button variant="accent" disabled={kirim} onClick={() => void submit()}>
+                <Button variant="accent" disabled={!siapKirim} onClick={() => void kirimPendaftaran()}>
                   {kirim ? (<span className="inline-flex items-center gap-2"><Spinner size={15} /> Mengirim...</span>) : 'Kirim Pendaftaran'}
                 </Button>
               )}

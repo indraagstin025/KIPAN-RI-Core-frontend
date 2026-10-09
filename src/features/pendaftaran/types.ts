@@ -59,6 +59,8 @@ export interface PendaftaranSubmit {
   email: string;
   whatsapp: string;
   wa_otp_token: string;
+  // Gerbang bot lapis 2 (submit): token widget kedua (sekali validasi).
+  turnstile_token?: string;
   motivation: string;
   persyaratan: string[];
   foto_key: string;

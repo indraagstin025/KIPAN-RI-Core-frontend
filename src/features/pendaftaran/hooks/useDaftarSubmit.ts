@@ -11,7 +11,7 @@ import type { DaftarForm, DocState } from './useDaftarForm';
 
 export function useDaftarSubmit(form: DaftarForm): {
   unggah: (category: DokumenCategory, file: File) => Promise<void>;
-  submit: () => Promise<void>;
+  submit: (turnstileToken?: string) => Promise<void>;
 } {
   const { docs, setDocs } = form;
 
@@ -54,7 +54,7 @@ export function useDaftarSubmit(form: DaftarForm): {
     }
   }
 
-  async function submit(): Promise<void> {
+  async function submit(turnstileToken?: string): Promise<void> {
     const { otp } = form;
     form.setUmum(null);
     const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -115,6 +115,7 @@ export function useDaftarSubmit(form: DaftarForm): {
         email: form.email.trim(),
         whatsapp: form.wa.trim(),
         wa_otp_token: otp.verifiedToken,
+        ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
         motivation: form.motivasi.trim(),
         persyaratan: form.persyaratan,
         foto_key: form.docs.foto.key,
