@@ -14,7 +14,7 @@ import {
   PersonIcon,
   PieChartIcon,
 } from '@radix-ui/react-icons';
-import { ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
+import { ErrorBox, Loading, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError } from '@/services/apiClient';
 import { checkHealth } from '@/features/system/api/systemService';
@@ -195,11 +195,13 @@ export default function DashboardPage() {
     // karena Tailwind tak punya utilitas zoom.
     <div style={{ zoom: 0.9 }}>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="border-l-4 border-kipan-yellow pl-4">
-          <PageHeader
-            title={`Selamat datang, ${user?.name ?? 'Admin'}`}
-            desc="Ringkasan keanggotaan dan antrean verifikasi sesuai cakupan wilayah Anda."
-          />
+        {/* Aksen kuning setinggi teks (self-stretch, tanpa margin ikut). */}
+        <div className="flex gap-3">
+          <span aria-hidden="true" className="w-1 shrink-0 self-stretch rounded-full bg-kipan-yellow" />
+          <div>
+            <h1 className="font-serif text-2xl font-bold text-kipan-text-dark sm:text-3xl">Selamat datang, {user?.name ?? 'Admin'}</h1>
+            <p className="mt-1 text-sm text-kipan-text-muted">Ringkasan keanggotaan dan antrean verifikasi sesuai cakupan wilayah Anda.</p>
+          </div>
         </div>
         <div className="hidden items-center gap-2.5 rounded-xl border border-kipan-border bg-white px-4 py-2.5 shadow-sm md:flex">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-kipan-soft-blue text-kipan-blue">
