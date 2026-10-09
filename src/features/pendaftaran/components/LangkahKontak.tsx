@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import Button from '@/components/ui/button';
 import { Spinner } from '@/components/ui/loading';
+import { TURNSTILE_SITE_KEY } from '@/config/env';
 import type { DaftarForm } from '../hooks/useDaftarForm';
+import TurnstileWidget from './TurnstileWidget';
 import { Field, TextArea, TextInput } from './fields';
 
 export default function LangkahKontak({ form }: { form: DaftarForm }) {
@@ -8,6 +11,21 @@ export default function LangkahKontak({ form }: { form: DaftarForm }) {
     email, setEmail, wa, setWa, kode, setKode, motivasi, setMotivasi,
     bindText, markTouched, visibleError, isInvalid, otp,
   } = form;
+  // Token Turnstile sekali pakai: kirim sukses/gagal → remount widget.
+  const [tsToken, setTsToken] = useState<string | null>(null);
+  const [tsKey, setTsKey] = useState(0);
+  const [tsError, setTsError] = useState<string | null>(null);
+  const butuhCaptcha = TURNSTILE_SITE_KEY !== '';
+  const siapKirim = !otp.sending && otp.cooldown <= 0 && (!butuhCaptcha || tsToken !== null);
+
+  async function kirimOtp(): Promise<void> {
+    if (!siapKirim) return;
+    const ok = await otp.kirim(wa, tsToken ?? undefined);
+    // Token hangus terpakai (atau gagal) → widget baru untuk percobaan berikut.
+    setTsToken(null);
+    setTsKey((k) => k + 1);
+    if (!ok) return;
+  }
 
   return (
     <div className="grid gap-5">
@@ -19,11 +37,24 @@ export default function LangkahKontak({ form }: { form: DaftarForm }) {
       </Field>
       <div className="rounded-xl border border-kipan-border bg-kipan-soft-blue p-4">
         <p className="text-sm font-bold text-kipan-navy">Verifikasi OTP WhatsApp</p>
+        {butuhCaptcha && (
+          <>
+            <TurnstileWidget
+              key={tsKey}
+              onToken={(t) => { setTsToken(t); if (t) setTsError(null); }}
+              onError={(m) => setTsError(m)}
+            />
+            {tsError && <p className="mt-2 text-xs font-medium text-kipan-red">{tsError}</p>}
+          </>
+        )}
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-          <Button variant="outline-navy" disabled={otp.sending || otp.cooldown > 0} onClick={() => void otp.kirim(wa)}>
+          <Button variant="outline-navy" disabled={!siapKirim} onClick={() => void kirimOtp()}>
             {otp.sending ? (<span className="inline-flex items-center gap-2"><Spinner size={15} /> Mengirim...</span>) : otp.cooldown > 0 ? `Kirim ulang (${otp.cooldown}s)` : 'Kirim Kode OTP'}
           </Button>
         </div>
+        {!siapKirim && butuhCaptcha && tsToken === null && otp.cooldown <= 0 && !otp.sending && (
+          <p className="mt-2 text-xs text-kipan-text-muted">Selesaikan verifikasi keamanan di atas dulu untuk mengaktifkan tombol kirim.</p>
+        )}
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <input
             value={kode}

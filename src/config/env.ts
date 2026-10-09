@@ -2,6 +2,10 @@ export const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
 
+// Kunci publik Cloudflare Turnstile (gerbang bot OTP; keputusan 09 Okt 2026).
+// Kosong = widget tidak dirender (backend menolak tanpa token bila aktif).
+export const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ?? '';
+
 // Access token disimpan di MEMORI (bukan localStorage) untuk menekan risiko
 // pencurian token lewat XSS: token tidak persist antar-reload. Sesi dipulihkan
 // dari refresh cookie HttpOnly saat aplikasi dimuat (lihat hasSessionHint).

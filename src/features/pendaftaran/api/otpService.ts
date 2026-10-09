@@ -1,10 +1,10 @@
 import { apiFetch } from '@/services/apiClient';
 import type { OtpRequestResult, OtpVerifyResult } from '../types';
 
-export function requestOtp(whatsapp: string): Promise<OtpRequestResult> {
+export function requestOtp(whatsapp: string, turnstileToken?: string): Promise<OtpRequestResult> {
   return apiFetch<OtpRequestResult>('/pendaftaran/otp/whatsapp/request', {
     method: 'POST',
-    data: { whatsapp },
+    data: { whatsapp, ...(turnstileToken ? { turnstile_token: turnstileToken } : {}) },
   });
 }
 

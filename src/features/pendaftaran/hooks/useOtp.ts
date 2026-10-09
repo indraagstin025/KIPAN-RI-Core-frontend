@@ -28,11 +28,11 @@ export function useOtp() {
     }, 1000);
   }
 
-  async function kirim(whatsapp: string): Promise<boolean> {
+  async function kirim(whatsapp: string, turnstileToken?: string): Promise<boolean> {
     setSending(true);
     setError(null);
     try {
-      const res = await requestOtp(whatsapp);
+      const res = await requestOtp(whatsapp, turnstileToken);
       startCooldown(res.resend_in || 60);
       return true;
     } catch (e: unknown) {
