@@ -116,7 +116,8 @@ export default function DashboardPage() {
         <Link to="/admin/pengurus" className="rounded-lg border border-kipan-border bg-white px-5 py-2.5 text-sm font-semibold text-kipan-navy hover:bg-kipan-soft-gray">Pengurus</Link>
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+      {/* Panel grafik: 2 kolom laptop, 4 kolom QHD (3xl). */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-2 3xl:grid-cols-4">
         {/* Distribusi pendaftaran per status */}
         <Card>
           <h2 className="text-sm font-bold uppercase tracking-wide text-kipan-text-muted">Pendaftaran per Status</h2>

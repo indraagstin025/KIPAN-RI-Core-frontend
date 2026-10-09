@@ -229,7 +229,7 @@ export default function DetailPage() {
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <h2 className="text-sm font-bold uppercase tracking-wide text-kipan-text-muted">Data Diri</h2>
-          <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+          <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 3xl:grid-cols-3">
             <Row label="NIK">
               {nik ? (
                 <span className="font-mono font-semibold">{nik}</span>

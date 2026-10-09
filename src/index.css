@@ -14,6 +14,12 @@
   --color-kipan-text-dark: #172033;
   --color-kipan-text-muted: #667085;
   --color-kipan-border: #e5e7eb;
+
+  /* Fase 1 QHD (09 Okt 2026): breakpoint admin untuk viewport 2560x1440.
+     --breakpoint-3xl mengaktifkan varian `3xl:` (≥1920px) agar grid/panel
+     memakai lebar QHD. <main> AppLayout memang full-fluid (tabel selebar
+     layar); yang dioptimalkan adalah kerapatan grid, bukan kontainer. */
+  --breakpoint-3xl: 120rem;
 }
 
 html {
