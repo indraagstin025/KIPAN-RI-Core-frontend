@@ -95,7 +95,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const jabatanNav: NavItem[] = canCreateJabatan(user?.role) ? [{ to: '/admin/jabatan', label: 'Master Jabatan', icon: LayersIcon }] : [];
   const isNasionalOrSuper = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL';
   const wilayahNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/wilayah', label: 'Wilayah', icon: GlobeIcon }] : [];
-  const usersNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/users', label: 'Manajemen Pengguna', icon: GearIcon }] : [];
+  const usersNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/users', label: 'Pengguna', icon: GearIcon }] : [];
   const outboxNav: NavItem[] = admin ? [{ to: '/admin/email-outbox', label: 'Antrian Email', icon: EnvelopeClosedIcon }] : [];
   const auditNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/audit', label: 'Jejak Audit', icon: ReaderIcon }] : [];
   const rolesNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/roles', label: 'Role & Wewenang', icon: MixIcon }] : [];
