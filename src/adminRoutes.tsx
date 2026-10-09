@@ -1,4 +1,3 @@
-import { Route } from 'react-router-dom';
 import AppLayout from './components/Layout/AppLayout';
 import RequireAuth from './components/guards/RequireAuth';
 import RequireRole from './components/guards/RequireRole';
@@ -66,12 +65,5 @@ function AdminOnly({ children, roles }: { children: React.ReactNode; roles?: Rol
   );
 }
 
-export default function AdminRoutes() {
-  return (
-    <>
-      {ADMIN_ROUTES.map((r) => (
-        <Route key={r.path} path={r.path} element={<AdminOnly roles={r.roles}>{r.element}</AdminOnly>} />
-      ))}
-    </>
-  );
-}
+export { ADMIN_ROUTES, AdminOnly };
+export type { AdminRoute };

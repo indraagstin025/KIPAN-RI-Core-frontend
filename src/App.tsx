@@ -5,7 +5,7 @@ import RequireRole from './components/guards/RequireRole';
 import ScrollToTop from './components/util/ScrollToTop';
 import OfflineBanner from './components/util/OfflineBanner';
 import { AuthProvider } from './context/AuthContext';
-import AdminRoutes from './adminRoutes';
+import { ADMIN_ROUTES, AdminOnly } from './adminRoutes';
 import ChangePasswordPage from './features/auth/pages/ChangePasswordPage';
 import MfaSetupPage from './features/auth/pages/MfaSetupPage';
 import SessionsPage from './features/auth/pages/SessionsPage';
@@ -48,8 +48,11 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/set-password" element={<ResetPasswordPage mode="set" />} />
 
-          {/* Admin (matriks terpusat di adminRoutes.tsx) */}
-          <AdminRoutes />
+          {/* Admin (matriks terpusat di adminRoutes.tsx; .map inline karena
+              <Routes> hanya menerima <Route>/fragment sebagai anak langsung) */}
+          {ADMIN_ROUTES.map((r) => (
+            <Route key={r.path} path={r.path} element={<AdminOnly roles={r.roles}>{r.element}</AdminOnly>} />
+          ))}
 
           {/* Akun (semua role terotentikasi) */}
           <Route
