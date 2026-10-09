@@ -1,30 +1,54 @@
 import { useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import {
+  ArchiveIcon,
+  BarChartIcon,
+  ClipboardIcon,
+  DashboardIcon,
+  DesktopIcon,
+  EnvelopeClosedIcon,
+  ExitIcon,
+  FileTextIcon,
+  GearIcon,
+  GlobeIcon,
+  GroupIcon,
+  HomeIcon,
+  IdCardIcon,
+  LayersIcon,
+  LockClosedIcon,
+  MixIcon,
+  MobileIcon,
+  PersonIcon,
+  ReaderIcon,
+} from '@radix-ui/react-icons';
 import { useAuth } from '@/context/AuthContext';
 import NotificationBell from '@/features/notification/components/NotificationBell';
 import { isAdminRole } from '@/features/auth/types';
 import { canCreateJabatan } from '@/features/kepengurusan/roles';
 
+type NavIcon = React.ComponentType<{ className?: string }>;
+
 interface NavItem {
   to: string;
   label: string;
   end?: boolean;
+  icon: NavIcon;
 }
 
 const ADMIN_NAV: NavItem[] = [
-  { to: '/admin', label: 'Dasbor', end: true },
-  { to: '/admin/pendaftaran', label: 'Antrean Pendaftaran' },
-  { to: '/admin/anggota', label: 'Data Anggota' },
-  { to: '/admin/sk', label: 'Surat Keputusan' },
-  { to: '/admin/pengurus', label: 'Pengurus' },
-  { to: '/admin/laporan', label: 'Laporan' },
+  { to: '/admin', label: 'Dasbor', end: true, icon: DashboardIcon },
+  { to: '/admin/pendaftaran', label: 'Antrean Pendaftaran', icon: ClipboardIcon },
+  { to: '/admin/anggota', label: 'Data Anggota', icon: PersonIcon },
+  { to: '/admin/sk', label: 'Surat Keputusan', icon: FileTextIcon },
+  { to: '/admin/pengurus', label: 'Pengurus', icon: GroupIcon },
+  { to: '/admin/laporan', label: 'Laporan', icon: BarChartIcon },
 ];
 
-const USER_NAV: NavItem[] = [{ to: '/akun/kta', label: 'KTA Saya' }];
+const USER_NAV: NavItem[] = [{ to: '/akun/kta', label: 'KTA Saya', icon: IdCardIcon }];
 
 const ACCOUNT_NAV: NavItem[] = [
-  { to: '/akun/password', label: 'Ganti Kata Sandi' },
-  { to: '/akun/sesi', label: 'Sesi Aktif' },
+  { to: '/akun/password', label: 'Ganti Kata Sandi', icon: LockClosedIcon },
+  { to: '/akun/sesi', label: 'Sesi Aktif', icon: DesktopIcon },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -55,17 +79,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const admin = isAdminRole(user?.role);
-  const jabatanNav: NavItem[] = canCreateJabatan(user?.role) ? [{ to: '/admin/jabatan', label: 'Master Jabatan' }] : [];
+  const jabatanNav: NavItem[] = canCreateJabatan(user?.role) ? [{ to: '/admin/jabatan', label: 'Master Jabatan', icon: LayersIcon }] : [];
   const isNasionalOrSuper = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL';
-  const wilayahNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/wilayah', label: 'Wilayah' }] : [];
-  const usersNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/users', label: 'Manajemen Pengguna' }] : [];
-  const outboxNav: NavItem[] = admin ? [{ to: '/admin/email-outbox', label: 'Antrian Email' }] : [];
-  const auditNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/audit', label: 'Jejak Audit' }] : [];
-  const rolesNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/roles', label: 'Role & Wewenang' }] : [];
-  const organisasiNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/organisasi', label: 'Profil Organisasi' }] : [];
-  const backupNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/backup', label: 'Database Backup' }] : [];
-  const ktaTemplateNav: NavItem[] = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL' ? [{ to: '/admin/kta-template', label: 'Template KTA' }] : [];
-  const mfaNav: NavItem[] = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL' ? [{ to: '/akun/keamanan', label: 'Keamanan MFA' }] : [];
+  const wilayahNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/wilayah', label: 'Wilayah', icon: GlobeIcon }] : [];
+  const usersNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/users', label: 'Manajemen Pengguna', icon: GearIcon }] : [];
+  const outboxNav: NavItem[] = admin ? [{ to: '/admin/email-outbox', label: 'Antrian Email', icon: EnvelopeClosedIcon }] : [];
+  const auditNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/audit', label: 'Jejak Audit', icon: ReaderIcon }] : [];
+  const rolesNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/roles', label: 'Role & Wewenang', icon: MixIcon }] : [];
+  const organisasiNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/organisasi', label: 'Profil Organisasi', icon: HomeIcon }] : [];
+  const backupNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/backup', label: 'Database Backup', icon: ArchiveIcon }] : [];
+  const ktaTemplateNav: NavItem[] = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL' ? [{ to: '/admin/kta-template', label: 'Template KTA', icon: IdCardIcon }] : [];
+  const mfaNav: NavItem[] = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL' ? [{ to: '/akun/keamanan', label: 'Keamanan MFA', icon: MobileIcon }] : [];
   const nav = admin ? [...ADMIN_NAV, ...wilayahNav, ...jabatanNav, ...usersNav, ...outboxNav, ...auditNav, ...rolesNav, ...organisasiNav, ...backupNav, ...ktaTemplateNav, ...ACCOUNT_NAV, ...mfaNav] : [...USER_NAV, ...ACCOUNT_NAV];
   const bisaMfa = mfaNav.length > 0;
   const menuItemCls = 'flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-kipan-text-dark transition hover:bg-kipan-soft-gray';
@@ -91,20 +115,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <span className="text-[11px] text-blue-100/70">Sistem Informasi</span>
           </span>
         </Link>
-        <nav className="mt-6 flex-1 space-y-1 overflow-y-auto" aria-label="Navigasi akun">
+        {/* Scrollbar disembunyikan (tetap bisa scroll): [scrollbar-width:none] + webkit. */}
+        <nav className="mt-6 flex-1 space-y-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Navigasi akun">
           {nav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end ?? false}
               title={collapsed ? item.label : undefined}
-              className={({ isActive }: { isActive: boolean }) => `${linkCls({ isActive })}${collapsed ? ' lg:px-2 lg:text-center' : ''}`}
+              className={({ isActive }: { isActive: boolean }) => `${linkCls({ isActive })}${collapsed ? ' lg:justify-center lg:px-2' : ''} flex items-center gap-3`}
               onClick={() => setOpen(false)}
             >
-              <span className={collapsed ? 'lg:hidden' : ''}>{item.label}</span>
-              <span aria-hidden="true" className={`mx-auto hidden h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-sm font-bold text-white ${collapsed ? 'lg:inline-flex' : ''}`}>
-                {item.label.charAt(0)}
-              </span>
+              <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
             </NavLink>
           ))}
         </nav>
@@ -174,7 +197,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                       <Link to="/akun/keamanan" onClick={() => setUserMenuOpen(false)} role="menuitem" className={menuItemCls}>Keamanan MFA</Link>
                     )}
                     <div className="my-1 border-t border-kipan-border" />
-                    <button type="button" role="menuitem" onClick={() => void onLogout()} className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-kipan-red transition hover:bg-red-50">Keluar</button>
+                    <button type="button" role="menuitem" onClick={() => void onLogout()} className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-kipan-red transition hover:bg-red-50"><ExitIcon className="h-4 w-4" aria-hidden="true" /> Keluar</button>
                   </div>
                 </>
               )}
