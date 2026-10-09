@@ -190,7 +190,10 @@ export default function DashboardPage() {
   const jamStr = `${new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(sekarang).replace(':', '.')} WIB`;
 
   return (
-    <div>
+    // Skala konten dashboard 90% dari shell (total ~81%): kartu terasa
+    // padat tanpa mengecilkan sidebar/navbar. Inline style (bukan utilitas)
+    // karena Tailwind tak punya utilitas zoom.
+    <div style={{ zoom: 0.9 }}>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="border-l-4 border-kipan-yellow pl-4">
           <PageHeader
