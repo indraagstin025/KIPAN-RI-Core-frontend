@@ -3,8 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { useAuth } from '@/context/AuthContext';
 import { Spinner } from '@/components/ui/loading';
+import TurnstileWidget from '@/components/ui/TurnstileWidget';
 import { Field, TextInput } from '@/components/ui/fields';
 import { ErrorBox } from '@/components/ui/stateful';
+import { TURNSTILE_SITE_KEY } from '@/config/env';
+import { ApiError } from '@/services/apiClient';
 import { hasLoginErrors, validateLoginInput, type LoginFieldErrors } from '../lib/validasiLogin';
 import { MfaRequiredError, MfaSetupRequiredError, isAdminRole } from '../types';
 import { enrollConfirm, enrollSetup, verifyMfa, type MfaSetupResult } from '../api/authService';
@@ -27,6 +30,11 @@ export default function AdminLoginShortcut() {
   const [enrollQr, setEnrollQr] = useState<string | null>(null);
   const [enrollCode, setEnrollCode] = useState('');
   const [enrollRecovery, setEnrollRecovery] = useState<string[] | null>(null);
+  // Gerbang bot lapis 3: widget muncul setelah 422 "verifikasi keamanan".
+  const [perluCaptcha, setPerluCaptcha] = useState(false);
+  const [tsToken, setTsToken] = useState<string | null>(null);
+  const [tsKey, setTsKey] = useState(0);
+  const butuhCaptcha = TURNSTILE_SITE_KEY !== '';
 
   useEffect(() => {
     const pressed = new Set<string>();
@@ -85,6 +93,8 @@ export default function AdminLoginShortcut() {
     setEnrollQr(null);
     setEnrollCode('');
     setEnrollRecovery(null);
+    setPerluCaptcha(false);
+    setTsToken(null);
   }
 
   async function submit(e: React.FormEvent): Promise<void> {
@@ -95,10 +105,14 @@ export default function AdminLoginShortcut() {
       setError(null);
       return;
     }
+    if (perluCaptcha && butuhCaptcha && tsToken === null) {
+      setError('Selesaikan verifikasi keamanan di bawah dulu.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const user = await login(email.trim(), password);
+      const user = await login(email.trim(), password, tsToken ?? undefined);
       if (!isAdminRole(user.role)) {
         // Anti-enumeration: jangan bocorkan jenis akun. Pesan generik saja.
         await logout();
@@ -108,7 +122,12 @@ export default function AdminLoginShortcut() {
       close();
       navigate('/admin', { replace: true });
     } catch (err: unknown) {
-      if (err instanceof MfaRequiredError) {
+      if (err instanceof ApiError && err.status === 422 && /verifikasi keamanan/i.test(err.message)) {
+        setPerluCaptcha(true);
+        setTsToken(null);
+        setTsKey((k) => k + 1);
+        setError(err.message);
+      } else if (err instanceof MfaRequiredError) {
         // Password benar, MFA aktif → lanjut ke input kode (tanpa bocor detail).
         setChallenge(err.challenge.challenge_token);
         setError(null);
@@ -267,6 +286,9 @@ export default function AdminLoginShortcut() {
               className="w-full rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:border-kipan-blue focus:outline-none focus:ring-2 focus:ring-kipan-blue/20"
             />
           </Field>
+          {perluCaptcha && butuhCaptcha && (
+            <TurnstileWidget key={tsKey} onToken={(t) => setTsToken(t)} />
+          )}
           </>
           )}
           {!enrollRecovery && (

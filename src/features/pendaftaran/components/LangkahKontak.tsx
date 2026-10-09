@@ -3,7 +3,7 @@ import Button from '@/components/ui/button';
 import { Spinner } from '@/components/ui/loading';
 import { TURNSTILE_SITE_KEY } from '@/config/env';
 import type { DaftarForm } from '../hooks/useDaftarForm';
-import TurnstileWidget from './TurnstileWidget';
+import TurnstileWidget from '@/components/ui/TurnstileWidget';
 import { Field, TextArea, TextInput } from './fields';
 
 export default function LangkahKontak({ form }: { form: DaftarForm }) {

@@ -8,8 +8,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  async function handleLogin(email: string, password: string) {
-    const user = await login(email, password);
+  async function handleLogin(email: string, password: string, turnstileToken?: string) {
+    const user = await login(email, password, turnstileToken);
     if (isAdminRole(user.role)) {
       // Anti-enumeration: jangan bocorkan jenis akun. Pesan generik saja.
       await logout();

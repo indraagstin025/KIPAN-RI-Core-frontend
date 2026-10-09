@@ -1,8 +1,8 @@
 import { apiFetch } from '@/services/apiClient';
 import { MfaRequiredError, MfaSetupRequiredError, type AuthUser, type LoginMFAChallenge, type LoginMFASetup, type LoginResult } from '../types';
 
-export function login(email: string, password: string): Promise<LoginResult> {
-  return apiFetch<LoginResult | LoginMFAChallenge | LoginMFASetup>('/auth/login', { method: 'POST', data: { email, password } }).then((res) => {
+export function login(email: string, password: string, turnstileToken?: string): Promise<LoginResult> {
+  return apiFetch<LoginResult | LoginMFAChallenge | LoginMFASetup>('/auth/login', { method: 'POST', data: { email, password, ...(turnstileToken ? { turnstile_token: turnstileToken } : {}) } }).then((res) => {
     if ((res as LoginMFAChallenge).mfa_required) {
       throw new MfaRequiredError(res as LoginMFAChallenge);
     }

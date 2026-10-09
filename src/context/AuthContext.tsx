@@ -11,7 +11,7 @@ function roleHome(role: string | undefined): string {
 interface AuthState {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string, turnstileToken?: string) => Promise<AuthUser>;
   // applyLogin menerapkan hasil login tahap-2 MFA ke state (tanpa password).
   applyLogin: (res: LoginResult) => AuthUser;
   logout: () => Promise<void>;
@@ -139,14 +139,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [followSession]);
 
   const applyLogin = useCallback((res: LoginResult) => {
+    // Guard skew versi: backend tanpa user (mis. bundle lama menerima
+    // respons 202) harus jadi pesan, bukan crash "reading 'id'".
+    if (!res || !res.user || !res.access_token) {
+      throw new Error('Respons login tak dikenal — muat ulang halaman (Ctrl+Shift+R) lalu coba lagi.');
+    }
     setAccessToken(res.access_token);
     setUser(res.user);
     setSessionIdentity(res.user.id, res.user.role);
     return res.user;
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await authApi.login(email, password);
+  const login = useCallback(async (email: string, password: string, turnstileToken?: string) => {
+    const res = await authApi.login(email, password, turnstileToken);
     return applyLogin(res);
   }, [applyLogin]);
 

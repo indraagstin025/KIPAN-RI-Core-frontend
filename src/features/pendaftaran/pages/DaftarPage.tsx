@@ -14,7 +14,7 @@ import LangkahDokumen from '../components/LangkahDokumen';
 import LangkahKontak from '../components/LangkahKontak';
 import LangkahPersyaratan from '../components/LangkahPersyaratan';
 import LangkahRingkasan from '../components/LangkahRingkasan';
-import TurnstileWidget from '../components/TurnstileWidget';
+import TurnstileWidget from '@/components/ui/TurnstileWidget';
 import { Alert, Stepper } from '../components/fields';
 
 export default function DaftarPage() {
