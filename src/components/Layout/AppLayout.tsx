@@ -126,11 +126,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-kipan-soft-gray">
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col overflow-x-hidden bg-kipan-navy p-4 transition-all duration-200 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-[76px] lg:px-3' : ''}`}>
-        <Link to="/" className="flex items-center gap-3 rounded-lg px-2 py-2">
-          <img src="/logo-kipan.jpg" alt="Logo KIPAN" className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white object-cover" />
+        <Link to="/" className="flex items-center gap-2 rounded-lg px-2 py-2">
+          <img src="/logo-kipan.jpg" alt="Logo KIPAN" className="h-8 w-8 shrink-0 rounded-full border border-white/30 bg-white object-cover" />
           <span className={`flex-col leading-tight ${collapsed ? 'lg:hidden' : 'flex'}`}>
-            <span className="text-sm font-extrabold text-white">KIPAN RI</span>
-            <span className="text-[11px] text-blue-100/70">Sistem Informasi</span>
+            <span className="whitespace-nowrap text-[13px] font-extrabold tracking-tight text-white">KIPAN <span className="text-kipan-yellow">REPUBLIK INDONESIA</span></span>
+            <span className="text-[11px] font-medium tracking-wide text-blue-100/70">SIM-KIPAN</span>
           </span>
         </Link>
         {/* Scrollbar disembunyikan (tetap bisa scroll): [scrollbar-width:none] + webkit. */}
@@ -178,9 +178,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M4 12h10M4 17h16" /></svg>
             </button>
+            {/* Brand ringkas khusus mobile (sidebar tersembunyi).
+                Varian penuh tak muat di layar kecil. */}
             <Link to="/" className="flex min-w-0 items-center gap-2 rounded-lg px-1 lg:hidden">
               <img src="/logo-kipan.jpg" alt="Logo KIPAN" className="h-8 w-8 shrink-0 rounded-full border border-white/30 bg-white object-cover" />
-              <span className="truncate text-sm font-extrabold text-white">KIPAN RI</span>
+              <span className="flex min-w-0 flex-col leading-tight">
+                <span className="truncate text-sm font-extrabold tracking-tight text-white">KIPAN <span className="text-kipan-yellow">RI</span></span>
+                <span className="text-[10px] font-medium tracking-wide text-blue-100/70">SIM-KIPAN</span>
+              </span>
             </Link>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
