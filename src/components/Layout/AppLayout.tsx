@@ -125,12 +125,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-kipan-soft-gray">
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-72 transform flex-col overflow-x-hidden bg-kipan-navy p-4 transition-all duration-200 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-[76px] lg:px-3' : ''}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-80 transform flex-col overflow-x-hidden bg-kipan-navy p-4 transition-all duration-200 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-[76px] lg:px-3' : ''}`}>
         <Link to="/" className="flex items-center gap-2.5 rounded-lg px-2 py-2">
           <img src="/logo-kipan.jpg" alt="Logo KIPAN" className="h-10 w-10 shrink-0 rounded-full border border-white/30 bg-white object-cover" />
           <span className={`flex-col leading-tight ${collapsed ? 'lg:hidden' : 'flex'}`}>
-            <span className="whitespace-nowrap text-base font-extrabold tracking-tight text-white">KIPAN</span>
-            <span className="whitespace-nowrap text-[11px] font-bold tracking-wide text-kipan-yellow">REPUBLIK INDONESIA</span>
+            <span className="whitespace-nowrap text-[13px] font-extrabold tracking-tight text-white">KIPAN <span className="text-kipan-yellow">REPUBLIK INDONESIA</span></span>
             <span className="text-[10px] font-medium tracking-wide text-blue-100/70">SIM-KIPAN</span>
           </span>
         </Link>
@@ -156,7 +155,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Kolom konten di-offset selebar sidebar (sidebar fixed di luar flow):
           sinkron dengan animasi collapse. Mobile tanpa offset (drawer overlay). */}
-      <div className={`flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 ${collapsed ? 'lg:pl-[76px]' : 'lg:pl-72'}`}>
+      <div className={`flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 ${collapsed ? 'lg:pl-[76px]' : 'lg:pl-80'}`}>
         {/* Navbar admin gaya CMS (navy blur, sticky): brand ringkas +
             lonceng + menu profil. Tanpa link landing. */}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-white/15 bg-kipan-navy/95 px-4 py-3 shadow-lg backdrop-blur-md lg:px-6">
