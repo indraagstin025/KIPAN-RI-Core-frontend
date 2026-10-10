@@ -3,9 +3,10 @@ import Button from '@/components/ui/button';
 import { Alert } from '@/components/ui/fields';
 import { ErrorBox, Loading, PageHeader } from '@/components/ui/stateful';
 import { ApiError } from '@/services/apiClient';
-import { fileDsar, myDsar } from '../api/dsarService';
+import { fileDsar, myDsar, exportMine } from '../api/dsarService';
 import { sisaJam } from '../lib/sla';
 import { DSAR_JENIS, type DsarRequest } from '../types';
+import StepUpModal from '@/components/ui/StepUpModal';
 
 const STATUS_LABEL: Record<string, string> = {
   diajukan: 'Diajukan',
@@ -22,6 +23,7 @@ export default function PrivasiPage() {
   const [ok, setOk] = useState<string | null>(null);
   const [jenis, setJenis] = useState<string>('akses');
   const [detail, setDetail] = useState('');
+  const [stepUpOpen, setStepUpOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,9 +59,33 @@ export default function PrivasiPage() {
     }
   }
 
+  async function unduhData(token: string): Promise<void> {
+    setError(null);
+    try {
+      const data = await exportMine(token);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'data-pribadi-saya.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Gagal mengunduh data');
+    }
+  }
+
   return (
     <div>
-      <PageHeader title="Data Pribadi Saya" desc="Ajukan hak Anda atas data pribadi (UU PDP): akses, perbaiki, hapus, tarik persetujuan, portabilitas, batasi. Respons maks 3x24 jam." />
+      <PageHeader
+        title="Data Pribadi Saya"
+        desc="Ajukan hak Anda atas data pribadi (UU PDP): akses, perbaiki, hapus, tarik persetujuan, portabilitas, batasi. Respons maks 3x24 jam."
+        action={(
+          <Button variant="outline-navy" onClick={() => setStepUpOpen(true)}>
+            Unduh Data Saya (JSON)
+          </Button>
+        )}
+      />
 
       {error && <div className="mb-4"><ErrorBox message={error} /></div>}
       {ok && <div className="mb-4"><Alert kind="success">{ok}</Alert></div>}
@@ -139,6 +165,12 @@ export default function PrivasiPage() {
           </table>
         </div>
       )}
+      <StepUpModal
+        open={stepUpOpen}
+        title="Unduh data pribadi — verifikasi ulang"
+        onClose={() => setStepUpOpen(false)}
+        onToken={(tok) => void unduhData(tok)}
+      />
     </div>
   );
 }

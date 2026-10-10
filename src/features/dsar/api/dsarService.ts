@@ -14,6 +14,13 @@ export function myDsar(): Promise<DsarRequest[]> {
   return apiFetch<DsarRequest[]>('/akun/dsar');
 }
 
+// exportMine: bundel portabilitas JSON (wajib step-up via header).
+export function exportMine(stepUpToken?: string): Promise<unknown> {
+  return apiFetch<unknown>('/akun/dsar/export', {
+    headers: stepUpToken ? { 'X-StepUp-Token': stepUpToken } : undefined,
+  });
+}
+
 // listDsar: antrean ter-scope (admin).
 export function listDsar(page = 1, limit = 25, status = ''): Promise<Paginated<DsarRequest[]>> {
   const p = new URLSearchParams({ page: String(page), limit: String(limit) });
