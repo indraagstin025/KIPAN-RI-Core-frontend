@@ -1,7 +1,9 @@
 # Analisis Kehilangan Data Form Pendaftaran (`/daftar`) saat Refresh
 
 > Tanggal: 11 Okt 2026 · Pelapor: penguji staging · Analis: OpenCode
-> Status: **terdokumentasi, belum diperbaiki** (menunggu perintah implementasi)
+> Status: **DITUTUP via Opsi A** (commit `53d2785`, 11 Okt 2026) — seluruh
+> mekanisme draf localStorage dihapus; refresh = isi ulang semua.
+> Rekomendasi B2–B5 di bawah TIDAK dikerjakan (usang bersama kodenya).
 > Cakupan: `frontend/src/features/pendaftaran/` (DaftarPage, useDaftarForm,
 > useDaftarSubmit, lib/draft, useWilayah, LangkahRingkasan, validasi)
 
