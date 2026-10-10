@@ -36,8 +36,12 @@ export default function OutboxListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aksiError, setAksiError] = useState<string | null>(null);
+  const [aksiOk, setAksiOk] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
+  // resentIds: baris yang berhasil dikirim ulang sesi ini (label sementara;
+  // hitungan permanen ikut jejak audit EMAIL_RESEND di server).
+  const [resentIds, setResentIds] = useState<Set<number>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,17 +72,32 @@ export default function OutboxListPage() {
     });
   }
 
-  async function aksi(fn: () => Promise<unknown>): Promise<void> {
+  async function aksi(fn: () => Promise<unknown>, okMsg?: string): Promise<void> {
     setAksiError(null);
+    setAksiOk(null);
     setBusy(true);
     try {
       await fn();
+      if (okMsg) setAksiOk(okMsg);
       await load();
     } catch (e: unknown) {
       setAksiError(e instanceof ApiError ? e.message : 'Aksi gagal');
     } finally {
       setBusy(false);
     }
+  }
+
+  // kirimUlang: konfirmasi dulu (anti double-click) — kirim ulang tautan
+  // sekali pakai MEMATIKAN tautan sebelumnya (single-active token).
+  async function kirimUlang(id: number, sudahTerkirim: boolean): Promise<void> {
+    const pesan = sudahTerkirim
+      ? `Kirim ulang email #${id}? Tautan sekali pakai sebelumnya akan mati dan penerima mendapat email baru.`
+      : `Kirim email #${id} sekarang?`;
+    if (!window.confirm(pesan)) return;
+    await aksi(async () => {
+      await sendOutboxNow(id);
+      setResentIds((prev) => new Set(prev).add(id));
+    }, `Email #${id} terkirim.`);
   }
 
   const allSelected = items.length > 0 && items.every((it) => selected.has(it.id));
@@ -99,7 +118,9 @@ export default function OutboxListPage() {
               disabled={busy || selected.size !== 1}
               onClick={() => {
                 const id = [...selected][0];
-                if (id !== undefined) void aksi(() => sendOutboxNow(id));
+                if (id === undefined) return;
+                const it = items.find((r) => r.id === id);
+                void kirimUlang(id, it?.status === 'sent');
               }}
             >
               Kirim Sekarang
@@ -109,6 +130,7 @@ export default function OutboxListPage() {
       />
 
       {aksiError && <div className="mb-4"><Alert kind="error">{aksiError}</Alert></div>}
+      {aksiOk && <div className="mb-4"><Alert kind="success">{aksiOk}</Alert></div>}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <select value={jenis} onChange={(e) => { setJenis(e.target.value); setPage(1); }} className="rounded-lg border border-kipan-border bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kipan-blue/20">
@@ -150,13 +172,14 @@ export default function OutboxListPage() {
                   <td className="px-4 py-3">
                     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${statusStyle(it.status)}`}>{statusLabel(it.status)}</span>
                     {it.status === 'failed' && it.last_error && <div className="mt-1 text-[10px] text-kipan-red">{it.last_error}</div>}
+                    {resentIds.has(it.id) && <div className="mt-1 text-[10px] font-semibold text-kipan-green">Dikirim ulang sesi ini</div>}
                   </td>
                   <td className="px-4 py-3 text-kipan-text-muted">{it.attempts}</td>
                   <td className="px-4 py-3 text-xs text-kipan-text-muted">{new Date(it.created_at).toLocaleString('id-ID')}</td>
                   <td className="px-4 py-3 text-right">
-                    {it.status !== 'sent' && (
-                      <button type="button" onClick={() => void aksi(() => sendOutboxNow(it.id))} className="font-semibold text-kipan-blue hover:underline">Kirim Sekarang</button>
-                    )}
+                    <button type="button" onClick={() => void kirimUlang(it.id, it.status === 'sent')} className="font-semibold text-kipan-blue hover:underline">
+                      {it.status === 'sent' ? 'Kirim Ulang' : 'Kirim Sekarang'}
+                    </button>
                   </td>
                 </tr>
               ))}
