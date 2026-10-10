@@ -21,6 +21,7 @@ import DetailPage from './features/verification/pages/DetailPage';
 import WilayahPage from './features/wilayah/pages/WilayahPage';
 import UserManagementPage from './features/users/pages/UserManagementPage';
 import OutboxListPage from './features/outbox/pages/OutboxListPage';
+import DsarQueuePage from './features/dsar/pages/DsarQueuePage';
 
 // Matriks rute admin (satu tempat, sejajar Matriks Hak Akses).
 // roles kosong = seluruh ADMIN_ROLES (tanpa pembatasan tambahan).
@@ -53,6 +54,7 @@ const ADMIN_ROUTES: AdminRoute[] = [
   { path: '/admin/wilayah', roles: SUPER_NASIONAL, element: <WilayahPage /> },
   { path: '/admin/users', roles: SUPER_NASIONAL, element: <UserManagementPage /> },
   { path: '/admin/email-outbox', element: <OutboxListPage /> },
+  { path: '/admin/dsar', element: <DsarQueuePage /> },
 ];
 
 function AdminOnly({ children, roles }: { children: React.ReactNode; roles?: Role[] }) {

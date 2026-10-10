@@ -20,6 +20,7 @@ import DaftarPage from './features/pendaftaran/pages/DaftarPage';
 import LacakPage from './features/tracking/pages/LacakPage';
 import RevisiPage from './features/tracking/pages/RevisiPage';
 import OrganisasiPublicPage from './features/organisasi/pages/OrganisasiPublicPage';
+import PrivasiPage from './features/dsar/pages/PrivasiPage';
 import LandingPage from './pages/public/LandingPage';
 
 export default function App() {
@@ -70,6 +71,10 @@ export default function App() {
           <Route
             path="/akun/kta"
             element={<RequireAuth><RequireRole roles={['USER']}><AppLayout><KtaSayaPage /></AppLayout></RequireRole></RequireAuth>}
+          />
+          <Route
+            path="/akun/privasi"
+            element={<RequireAuth><RequireRole roles={['USER']}><AppLayout><PrivasiPage /></AppLayout></RequireRole></RequireAuth>}
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />

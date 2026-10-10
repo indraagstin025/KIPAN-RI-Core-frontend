@@ -4,6 +4,7 @@ import {
   ArchiveIcon,
   BarChartIcon,
   ClipboardIcon,
+  ClockIcon,
   DashboardIcon,
   DesktopIcon,
   EnvelopeClosedIcon,
@@ -14,6 +15,7 @@ import {
   GroupIcon,
   HomeIcon,
   IdCardIcon,
+  InfoCircledIcon,
   LayersIcon,
   LockClosedIcon,
   MixIcon,
@@ -42,9 +44,13 @@ const ADMIN_NAV: NavItem[] = [
   { to: '/admin/sk', label: 'Surat Keputusan', icon: FileTextIcon },
   { to: '/admin/pengurus', label: 'Pengurus', icon: GroupIcon },
   { to: '/admin/laporan', label: 'Laporan', icon: BarChartIcon },
+  { to: '/admin/dsar', label: 'Permintaan Data', icon: ClockIcon },
 ];
 
-const USER_NAV: NavItem[] = [{ to: '/akun/kta', label: 'KTA Saya', icon: IdCardIcon }];
+const USER_NAV: NavItem[] = [
+  { to: '/akun/kta', label: 'KTA Saya', icon: IdCardIcon },
+  { to: '/akun/privasi', label: 'Data Pribadi', icon: InfoCircledIcon },
+];
 
 const ACCOUNT_NAV: NavItem[] = [
   { to: '/akun/password', label: 'Ganti Kata Sandi', icon: LockClosedIcon },
