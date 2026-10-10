@@ -6,6 +6,7 @@ function toParams(q: AuditQuery): string {
   p.set('page', String(q.page ?? 1));
   p.set('limit', String(q.limit ?? 25));
   if (q.aksi) p.set('aksi', q.aksi);
+  if (q.aksiIn) p.set('aksi_in', q.aksiIn);
   if (q.entitas) p.set('entitas', q.entitas);
   if (q.aktor) p.set('aktor', q.aktor);
   if (q.dari) p.set('dari', q.dari);

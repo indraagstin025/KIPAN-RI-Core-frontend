@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   ArchiveIcon,
   BarChartIcon,
+  CheckCircledIcon,
   ClipboardIcon,
   ClockIcon,
   DashboardIcon,
@@ -108,7 +109,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const wilayahNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/wilayah', label: 'Wilayah', icon: GlobeIcon }] : [];
   const usersNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/users', label: 'Pengguna', icon: GearIcon }] : [];
   const outboxNav: NavItem[] = admin ? [{ to: '/admin/email-outbox', label: 'Antrian Email', icon: EnvelopeClosedIcon }] : [];
-  const auditNav: NavItem[] = isNasionalOrSuper ? [{ to: '/admin/audit', label: 'Jejak Audit', icon: ReaderIcon }] : [];
+  const auditNav: NavItem[] = isNasionalOrSuper ? [
+    { to: '/admin/audit', label: 'Jejak Audit', icon: ReaderIcon },
+    { to: '/admin/keputusan', label: 'Log Keputusan', icon: CheckCircledIcon },
+  ] : [];
   const rolesNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/roles', label: 'Role & Wewenang', icon: MixIcon }] : [];
   const organisasiNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/organisasi', label: 'Profil Organisasi', icon: HomeIcon }] : [];
   const backupNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/backup', label: 'Database Backup', icon: ArchiveIcon }] : [];

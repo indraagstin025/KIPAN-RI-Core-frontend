@@ -15,6 +15,9 @@ export interface AuditQuery {
   page?: number;
   limit?: number;
   aksi?: string;
+  // aksiIn: daftar aksi koma-pisah untuk filter multi-aksi Batch 3
+  // (mis. "SETUJUI,TOLAK"). Backend validasi ketat (400 bila liar).
+  aksiIn?: string;
   entitas?: string;
   aktor?: string;
   dari?: string;
