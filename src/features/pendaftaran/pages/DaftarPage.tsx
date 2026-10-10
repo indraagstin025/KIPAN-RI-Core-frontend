@@ -3,8 +3,6 @@ import LandingLayout from '@/components/Layout/LandingLayout';
 import Button from '@/components/ui/button';
 import { Overlay, Spinner } from '@/components/ui/loading';
 import { useTurnstileGate } from '@/components/ui/useTurnstileGate';
-import { clearDraft } from '../lib/draft';
-import { draftHasContent } from '../lib/daftarMapping';
 import { STEPS, useDaftarForm } from '../hooks/useDaftarForm';
 import { useDaftarSubmit } from '../hooks/useDaftarSubmit';
 import HasilTerkirim from '../components/HasilTerkirim';
@@ -19,7 +17,7 @@ import { Alert, Stepper } from '../components/fields';
 export default function DaftarPage() {
   const form = useDaftarForm();
   const { unggah, submit } = useDaftarSubmit(form);
-  const { step, setStep, draft, hasil, umum, setUmum, kirim, wilayahError, touchStep, setSubmitted } = form;
+  const { step, setStep, hasil, umum, setUmum, kirim, wilayahError, touchStep, setSubmitted } = form;
   // Token Turnstile lapis 2 (submit): sekali pakai, remount tiap percobaan.
   const gate = useTurnstileGate();
   const siapKirim = !kirim && (!gate.enabled || gate.token !== null);
@@ -76,27 +74,6 @@ export default function DaftarPage() {
             <Stepper steps={STEPS} active={step} />
           </div>
 
-          {draftHasContent(draft) && !hasil && (
-            <div className="mt-4">
-              <Alert kind="info">
-                Melanjutkan isian yang tersimpan otomatis di perangkat ini.{' '}
-                Demi keamanan, NIK, kontak, dan alamat tidak disimpan dan perlu diketik ulang.{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm('Hapus draf tersimpan dan mulai dari awal?')) {
-                      clearDraft();
-                      window.location.reload();
-                    }
-                  }}
-                  className="font-bold underline hover:text-kipan-navy"
-                >
-                  Mulai dari awal
-                </button>
-              </Alert>
-            </div>
-          )}
-
           {umum && (
             <div className="mt-6">
               <Alert kind="error">{umum}</Alert>
@@ -134,7 +111,6 @@ export default function DaftarPage() {
                       type="button"
                       onClick={() => {
                         if (window.confirm('Kosongkan formulir dan mulai dari awal?')) {
-                          clearDraft();
                           window.location.reload();
                         }
                       }}

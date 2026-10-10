@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DokumenCategory, PendaftaranCreated } from '../types';
-import { loadDraft, saveDraft, type RegDraft } from '../lib/draft';
 import { STEP1_KEYS, STEP2_KEYS, STEP3_KEYS, STEP4_KEYS } from '../lib/daftarMapping';
 import { validDataDiri, validDokumen, validKontak, validPersyaratan } from '../lib/validasi';
 import { useOtp } from './useOtp';
@@ -33,7 +32,6 @@ export interface BindText {
 // DaftarForm adalah SELURUH state + helper formulir pendaftaran.
 // Komponen langkah menerima objek ini agar daftar props tetap ramping.
 export interface DaftarForm {
-  draft: RegDraft | null;
   step: number;
   setStep: (v: number | ((s: number) => number)) => void;
   nama: string; setNama: (v: string) => void;
@@ -93,45 +91,30 @@ export interface DaftarForm {
 }
 
 export function useDaftarForm(): DaftarForm {
-  // Draf dari localStorage (bila ada) untuk memulihkan progres saat refresh.
-  const [draft] = useState(() => loadDraft());
-  // Dipulihkan ke langkah TERAKHIR draf. Token OTP tidak dipersist, jadi saat
-  // Kirim pengguna diminta verifikasi OTP ulang (submit mengembalikan ke
-  // langkah Kontak & OTP bila token hilang).
-  const initStep = draft ? Math.max(0, Math.min(draft.step, STEPS.length - 1)) : 0;
-
-  const [step, setStep] = useState(initStep);
-  // FE-01: NIK, kontak, alamat, dan TTL tidak dipulihkan dari draf
-  // (tidak pernah disimpan) — selalu mulai kosong dan diketik ulang.
-  const [nama, setNama] = useState(draft?.nama ?? '');
+  // Opsi A (11 Okt 2026): TANPA draf localStorage. Refresh = mulai dari
+  // awal, selalu konsisten (tidak ada lagi "setengah pulih" yang
+  // membingungkan antara data hilang vs by-design tak disimpan).
+  const [step, setStep] = useState(0);
+  const [nama, setNama] = useState('');
   const [nik, setNik] = useState('');
   const [tempat, setTempat] = useState('');
   const [tanggal, setTanggal] = useState('');
-  const [jk, setJk] = useState(draft?.jk ?? '');
-  const [agama, setAgama] = useState(draft?.agama ?? '');
-  const [pendidikan, setPendidikan] = useState(draft?.pendidikan ?? '');
-  const [pekerjaan, setPekerjaan] = useState(draft?.pekerjaan ?? '');
+  const [jk, setJk] = useState('');
+  const [agama, setAgama] = useState('');
+  const [pendidikan, setPendidikan] = useState('');
+  const [pekerjaan, setPekerjaan] = useState('');
   const [alamat, setAlamat] = useState('');
-  const [prov, setProv] = useState(draft?.prov ?? '');
-  const [kab, setKab] = useState(draft?.kab ?? '');
-  const [kec, setKec] = useState(draft?.kec ?? '');
-  const [desa, setDesa] = useState(draft?.desa ?? '');
+  const [prov, setProv] = useState('');
+  const [kab, setKab] = useState('');
+  const [kec, setKec] = useState('');
+  const [desa, setDesa] = useState('');
   const [kodepos, setKodepos] = useState('');
   const [email, setEmail] = useState('');
   const [wa, setWa] = useState('');
   const [kode, setKode] = useState('');
-  const [motivasi, setMotivasi] = useState(draft?.motivasi ?? '');
-  const [persyaratan, setPersyaratan] = useState<string[]>(draft?.persyaratan ?? []);
-  const [docs, setDocs] = useState<Record<DokumenCategory, DocState>>(() => {
-    const base = emptyDocs();
-    if (draft?.docs) {
-      for (const cat of Object.keys(base) as DokumenCategory[]) {
-        const saved = draft.docs[cat];
-        if (saved?.key) base[cat] = { key: saved.key, name: saved.name, sig: '', uploading: false, error: null };
-      }
-    }
-    return base;
-  });
+  const [motivasi, setMotivasi] = useState('');
+  const [persyaratan, setPersyaratan] = useState<string[]>([]);
+  const [docs, setDocs] = useState<Record<DokumenCategory, DocState>>(emptyDocs);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // touched: field yang sudah disentuh pengguna. Error hanya ditampilkan
   // bila field touched ATAU form sudah pernah disubmit (submitted).
@@ -238,13 +221,7 @@ export function useDaftarForm(): DaftarForm {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveValues]);
 
-  // Muat ulang kabupaten bila provinsi dipulihkan dari draf.
-  useEffect(() => {
-    if (draft?.prov) void pilihProvinsi(Number(draft.prov));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Muat saran kecamatan setiap kabupaten terpilih (termasuk pulihan draf).
+  // Muat saran kecamatan setiap kabupaten terpilih.
   // Kode BPS diambil dari daftar kabupaten yang sudah dimuat; kosong/tak
   // ketemu = daftar dikosongkan (form fallback ke ketik manual).
   useEffect(() => {
@@ -279,22 +256,8 @@ export function useDaftarForm(): DaftarForm {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [desa, kec, kabupaten]);
 
-  // Simpan draf setiap perubahan agar refresh tidak menghilangkan progres.
-  // FE-01: hanya field non-sensitif yang ditulis (lihat PERSIST_KEYS).
-  useEffect(() => {
-    if (hasil) return;
-    const draftDocs = Object.fromEntries(
-      (Object.keys(docs) as DokumenCategory[]).map((c) => [c, { key: docs[c].key, name: docs[c].name }]),
-    ) as RegDraft['docs'];
-    saveDraft({
-      step, nama, jk, agama, pendidikan, pekerjaan,
-      prov, kab, kec, desa, motivasi, persyaratan, docs: draftDocs,
-    });
-  }, [step, nama, jk, agama, pendidikan, pekerjaan,
-    prov, kab, kec, desa, motivasi, persyaratan, docs, hasil]);
-
   return {
-    draft, step, setStep,
+    step, setStep,
     nama, setNama, nik, setNik, tempat, setTempat, tanggal, setTanggal,
     jk, setJk, agama, setAgama, pendidikan, setPendidikan, pekerjaan, setPekerjaan,
     alamat, setAlamat, prov, setProv, kab, setKab, kec, setKec, desa, setDesa,

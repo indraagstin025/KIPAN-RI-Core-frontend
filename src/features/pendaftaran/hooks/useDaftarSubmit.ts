@@ -4,7 +4,6 @@ import { submitPendaftaran } from '../api/pendaftaranService';
 import { uploadDokumen } from '../api/storageService';
 import { DOKUMEN_LIST } from '../constants/dokumen';
 import { mapServerFields, stepForKey } from '../lib/daftarMapping';
-import { clearDraft } from '../lib/draft';
 import type { DokumenCategory } from '../types';
 import { fileSig, pdfLocked } from './useDokumenCheck';
 import type { DaftarForm, DocState } from './useDaftarForm';
@@ -131,7 +130,6 @@ export function useDaftarSubmit(form: DaftarForm): {
         email: form.email.trim(),
         whatsapp: form.wa.trim(),
       });
-      clearDraft();
       form.setHasil(res);
     } catch (err: unknown) {
       if (err instanceof ApiError) {

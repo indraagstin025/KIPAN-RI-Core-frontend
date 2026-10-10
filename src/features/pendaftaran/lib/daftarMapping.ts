@@ -1,5 +1,3 @@
-import type { RegDraft } from './draft';
-
 // FIELD_MAP memetakan nama field backend (JSON Go) ke kunci error form,
 // agar pesan validasi server (422 per-field) tampil di input yang tepat.
 export const FIELD_MAP: Record<string, string> = {
@@ -49,20 +47,4 @@ export function stepForKey(key: string): number {
   if (STEP3_KEYS.includes(key)) return 2;
   if (STEP4_KEYS.includes(key)) return 3;
   return 4;
-}
-
-// draftHasContent: draf dianggap berisi bila ada satu saja isian/dokumen
-// atau sudah melewati langkah awal — agar banner "melanjutkan" tidak muncul
-// untuk kunjungan pertama yang belum mengisi apa pun.
-export function draftHasContent(d: RegDraft | null): boolean {
-  if (!d) return false;
-  if (d.step > 0) return true;
-  // FE-01: hanya kunci non-sensitif yang bisa ada di draf.
-  const textKeys: Array<keyof Omit<RegDraft, 'step' | 'docs'>> = [
-    'nama', 'jk', 'agama', 'pendidikan', 'pekerjaan',
-    'prov', 'kab', 'kec', 'desa', 'motivasi',
-  ];
-  if (textKeys.some((k) => d[k] && String(d[k]).trim() !== '')) return true;
-  if ((d.persyaratan ?? []).length > 0) return true;
-  return Object.values(d.docs ?? {}).some((s) => s && s.key !== '');
 }
