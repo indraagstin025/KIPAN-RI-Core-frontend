@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import LandingLayout from '@/components/Layout/LandingLayout';
 import Button from '@/components/ui/button';
 import { Overlay, Spinner } from '@/components/ui/loading';
+import { ApiError } from '@/services/apiClient';
 import { useTurnstileGate } from '@/components/ui/useTurnstileGate';
 import { STEPS, useDaftarForm } from '../hooks/useDaftarForm';
 import { useDaftarSubmit } from '../hooks/useDaftarSubmit';
@@ -13,6 +15,8 @@ import LangkahPersyaratan from '../components/LangkahPersyaratan';
 import LangkahRingkasan from '../components/LangkahRingkasan';
 import TurnstileWidget from '@/components/ui/TurnstileWidget';
 import { Alert, Stepper } from '../components/fields';
+import { verifyDokumen } from '@/features/storage/api/storageService';
+import { DOKUMEN_LIST, isDokumenWajib } from '../constants/dokumen';
 
 export default function DaftarPage() {
   const form = useDaftarForm();
@@ -28,7 +32,46 @@ export default function DaftarPage() {
     gate.reset();
   }
 
-  function lanjut(): void {
+  const [verifikasi, setVerifikasi] = useState(false);
+
+  // verifikasiDokumenServer: gerbang langkah — pastikan tiap berkas wajib
+  // benar-benar valid di server SEBELUM ke Persyaratan (masalah muncul dini,
+  // bukan misteri di submit). Tanpa purge; error ditulis per slot.
+  async function verifikasiDokumenServer(): Promise<boolean> {
+    const wajib = DOKUMEN_LIST.filter((d) => isDokumenWajib(d.category));
+    const hasil = await Promise.all(wajib.map(async (d) => {
+      const st = form.docs[d.category];
+      if (!st.key) return { category: d.category, label: d.label, ok: true };
+      try {
+        await verifyDokumen(st.key, d.category);
+        return { category: d.category, label: d.label, ok: true };
+      } catch (e: unknown) {
+        return {
+          category: d.category,
+          label: d.label,
+          ok: false,
+          pesan: e instanceof ApiError ? e.message : 'Dokumen gagal diverifikasi',
+        };
+      }
+    }));
+    const gagal = hasil.filter((r) => !r.ok);
+    if (gagal.length > 0) {
+      form.setDocs((p) => {
+        const next = { ...p };
+        for (const g of gagal) {
+          const cur = next[g.category];
+          if (cur) next[g.category] = { ...cur, error: (g as { pesan?: string }).pesan ?? 'Dokumen bermasalah' };
+        }
+        return next;
+      });
+      setUmum(`Ada dokumen bermasalah (${gagal.map((g) => g.label).join(', ')}). Perbaiki/unggah ulang sebelum lanjut.`);
+      return false;
+    }
+    return true;
+  }
+
+  async function lanjut(): Promise<void> {
+    if (verifikasi) return;
     setUmum(null);
     setSubmitted(true);
     touchStep(step);
@@ -40,9 +83,20 @@ export default function DaftarPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (step === 2 && !form.runValidDokumen()) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
+    if (step === 2) {
+      if (!form.runValidDokumen()) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      setVerifikasi(true);
+      try {
+        if (!(await verifikasiDokumenServer())) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      } finally {
+        setVerifikasi(false);
+      }
     }
     if (step === 3 && !form.runValidPersyaratan()) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -122,7 +176,9 @@ export default function DaftarPage() {
                 )}
               </div>
               {step < 4 ? (
-                <Button variant="primary" onClick={lanjut}>Lanjut →</Button>
+                <Button variant="primary" disabled={verifikasi} onClick={() => void lanjut()}>
+                  {verifikasi ? (<span className="inline-flex items-center gap-2"><Spinner size={15} /> Memverifikasi dokumen...</span>) : 'Lanjut →'}
+                </Button>
               ) : (
                 <Button variant="accent" disabled={!siapKirim} onClick={() => void kirimPendaftaran()}>
                   {kirim ? (<span className="inline-flex items-center gap-2"><Spinner size={15} /> Mengirim...</span>) : 'Kirim Pendaftaran'}

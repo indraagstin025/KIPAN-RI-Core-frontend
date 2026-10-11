@@ -50,6 +50,15 @@ function describeStorageError(err: unknown): string {
   return err instanceof Error ? err.message : 'Unggah berkas gagal.';
 }
 
+// verifyDokumen: gerbang langkah — pastikan objek benar-benar valid di
+// server SEBELUM lanjut ke Persyaratan (masalah muncul dini, bukan misteri
+// di submit). Tanpa purge (cek murni); submit final yang memutuskan.
+export function verifyDokumen(key: string, category: DokumenCategory): Promise<void> {
+  return apiFetch<void>('/storage/verify-upload', {
+    method: 'POST',
+    data: { key, category },
+  }).then(() => undefined);
+}
 // presignView: tiket baca dokumen privat (admin, teraudit + ter-scope).
 export function presignView(key: string): Promise<PresignViewResult> {
   return apiFetch<PresignViewResult>(`/storage/presign-view?key=${encodeURIComponent(key)}`);
