@@ -45,11 +45,14 @@ export default function DokumenViewerModal({ dokumen, onClose }: Props) {
             Tutup ✕
           </button>
         </div>
-        <div className="relative min-h-0 flex-1 overflow-auto bg-slate-100">
+        <div
+          className="relative min-h-0 flex-1 overflow-auto bg-slate-100"
+          onContextMenu={(e) => e.preventDefault()}
+        >
           {dokumen.isPdf ? (
-            <iframe src={dokumen.url} title={dokumen.label} className="h-[70vh] w-full bg-white" />
+            <iframe src={`${dokumen.url}#toolbar=0&navpanes=0`} title={dokumen.label} className="h-[70vh] w-full bg-white" />
           ) : (
-            <img src={dokumen.url} alt={dokumen.label} className="mx-auto max-h-[70vh] object-contain" draggable={false} />
+            <img src={dokumen.url} alt={dokumen.label} className="mx-auto max-h-[70vh] select-none object-contain" draggable={false} />
           )}
           <div className="pointer-events-none absolute inset-0 select-none overflow-hidden" aria-hidden="true">
             <div className="flex h-full w-full flex-wrap content-center items-center justify-center gap-10 opacity-20">

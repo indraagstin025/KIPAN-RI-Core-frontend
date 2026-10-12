@@ -9,6 +9,8 @@ import AnggotaFormModal from '@/features/anggota/components/AnggotaFormModal';
 import type { ActivityLog } from '@/features/audit/types';
 import KtaCardPreview from '@/features/kta/components/KtaCardPreview';
 import { presignView } from '@/features/storage/api/storageService';
+import DokumenViewerModal, { type ViewerDokumen } from '@/features/verification/components/DokumenViewerModal';
+import { buatWatermark } from '@/features/verification/lib/watermark';
 import { ApiError } from '@/services/apiClient';
 import {
   adminGetPengurus,
@@ -95,6 +97,9 @@ export default function PengurusDetailPage() {
 
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  // KTP-37: penampil dokumen dalam aplikasi + watermark (ganti tab S3 baru).
+  const [dokumen, setDokumen] = useState<ViewerDokumen | null>(null);
+  const [membuka, setMembuka] = useState<string | null>(null);
   const [jabatanAll, setJabatanAll] = useState<Jabatan[]>([]);
   const [skTargets, setSkTargets] = useState<SKListItem[]>([]);
 
@@ -181,12 +186,22 @@ export default function PengurusDetailPage() {
     }
   }
 
-  async function lihatDokumen(key: string): Promise<void> {
+  async function lihatDokumen(key: string, label: string): Promise<void> {
+    setError(null);
+    setMembuka(key);
     try {
       const res = await presignView(key);
-      window.open(res.view_url, '_blank', 'noopener');
+      const pembuka = user?.name?.trim() || user?.email || 'ADMIN';
+      setDokumen({
+        label,
+        url: res.view_url,
+        isPdf: /\.pdf$/i.test(key),
+        watermark: buatWatermark(pembuka),
+      });
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal membuka dokumen');
+    } finally {
+      setMembuka(null);
     }
   }
 
@@ -438,7 +453,14 @@ export default function PengurusDetailPage() {
                     <li key={d.field} className="flex items-center justify-between gap-3 rounded-lg border border-kipan-border px-3 py-2">
                       <span className="text-kipan-text-dark">{d.label}</span>
                       {ada ? (
-                        <button type="button" onClick={() => void lihatDokumen(key as string)} className="font-semibold text-kipan-blue hover:underline">Lihat</button>
+                        <button
+                          type="button"
+                          disabled={membuka === (key as string)}
+                          onClick={() => void lihatDokumen(key as string, d.label)}
+                          className="font-semibold text-kipan-blue hover:underline disabled:opacity-60"
+                        >
+                          {membuka === (key as string) ? 'Membuka…' : 'Lihat'}
+                        </button>
                       ) : (
                         <span className="text-xs text-kipan-text-muted">Belum diunggah</span>
                       )}
@@ -498,6 +520,7 @@ export default function PengurusDetailPage() {
       {anggota && (
         <AnggotaFormModal open={showForm} member={anggota} onClose={() => setShowForm(false)} onDone={load} />
       )}
+      <DokumenViewerModal dokumen={dokumen} onClose={() => setDokumen(null)} />
     </div>
   );
 }

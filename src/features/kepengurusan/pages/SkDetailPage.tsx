@@ -7,6 +7,8 @@ import { Modal } from '@/components/ui/modal';
 import { Card, ErrorBox, Loading, PageHeader, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
 import { presignView } from '@/features/storage/api/storageService';
+import DokumenViewerModal, { type ViewerDokumen } from '@/features/verification/components/DokumenViewerModal';
+import { buatWatermark } from '@/features/verification/lib/watermark';
 import { ApiError } from '@/services/apiClient';
 import {
   adminApproveSK,
@@ -46,6 +48,9 @@ export default function SkDetailPage() {
   const [showNonaktif, setShowNonaktif] = useState(false);
   const [nonaktifStatus, setNonaktifStatus] = useState<'Demisioner' | 'Diberhentikan'>('Demisioner');
   const [nonaktifKeterangan, setNonaktifKeterangan] = useState('');
+  // KTP-37: penampil file SK dalam aplikasi + watermark (ganti tab S3 baru).
+  const [dokumen, setDokumen] = useState<ViewerDokumen | null>(null);
+  const [membuka, setMembuka] = useState(false);
 
   const load = useCallback(async () => {
     if (!skId) return;
@@ -67,11 +72,20 @@ export default function SkDetailPage() {
   async function lihatFile(): Promise<void> {
     if (!detail) return;
     setAksiError(null);
+    setMembuka(true);
     try {
       const res = await presignView(detail.sk.file_sk_key);
-      window.open(res.view_url, '_blank', 'noopener');
+      const pembuka = user?.name?.trim() || user?.email || 'ADMIN';
+      setDokumen({
+        label: `File SK ${detail.sk.nomor_sk}`,
+        url: res.view_url,
+        isPdf: /\.pdf$/i.test(detail.sk.file_sk_key),
+        watermark: buatWatermark(pembuka),
+      });
     } catch (e: unknown) {
       setAksiError(e instanceof ApiError ? e.message : 'Gagal membuka file SK');
+    } finally {
+      setMembuka(false);
     }
   }
 
@@ -157,7 +171,7 @@ export default function SkDetailPage() {
   return (
     <div>
       <PageHeader title={sk.nomor_sk} desc={sk.judul} action={
-        <Button variant="outline-navy" onClick={() => void lihatFile()}>Lihat File SK</Button>
+        <Button variant="outline-navy" disabled={membuka} onClick={() => void lihatFile()}>{membuka ? 'Membuka…' : 'Lihat File SK'}</Button>
       } />
 
       {aksiError && <div className="mb-4"><Alert kind="error">{aksiError}</Alert></div>}
@@ -306,6 +320,7 @@ export default function SkDetailPage() {
       )}
 
       {busy && <Overlay label="Memproses..." />}
+      <DokumenViewerModal dokumen={dokumen} onClose={() => setDokumen(null)} />
     </div>
   );
 }
