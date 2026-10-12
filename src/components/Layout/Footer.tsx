@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ORG } from '@/data/landing';
+import { CMS_PORTAL_URL } from '@/config/env';
 
 export default function Footer() {
   return (
@@ -24,6 +25,7 @@ export default function Footer() {
             <li><Link to="/lacak" className="hover:text-white">Lacak Status Pendaftaran</Link></li>
             <li><Link to="/verifikasi-kta" className="hover:text-white">Verifikasi KTA</Link></li>
             <li><Link to="/anggota" className="hover:text-white">Cek Keanggotaan Kader</Link></li>
+            <li><a href={CMS_PORTAL_URL} target="_blank" rel="noopener noreferrer" className="hover:text-white">Portal Informasi (Berita & Agenda)</a></li>
           </ul>
         </nav>
         <div>

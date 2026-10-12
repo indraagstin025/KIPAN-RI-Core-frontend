@@ -4,7 +4,6 @@ import CtaSection from '@/components/landing/CtaSection';
 import Hero from '@/components/landing/Hero';
 import HistoryBanner from '@/components/landing/HistoryBanner';
 import LayananSection from '@/components/landing/LayananSection';
-import TentangSection from '@/components/landing/TentangSection';
 import TipeSection from '@/components/landing/TipeSection';
 
 export default function LandingPage() {
@@ -13,7 +12,6 @@ export default function LandingPage() {
       <Hero />
       <HistoryBanner />
       <TipeSection />
-      <TentangSection />
       <AlurSection />
       <LayananSection />
       <CtaSection />

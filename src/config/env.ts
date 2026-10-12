@@ -6,6 +6,9 @@ export const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
 // Kosong = widget tidak dirender (backend menolak tanpa token bila aktif).
 export const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ?? '';
 
+// Portal informasi publik (CMS: berita, agenda, galeri). Teritori CMS.
+export const CMS_PORTAL_URL = (import.meta.env.VITE_CMS_URL as string | undefined)?.replace(/\/$/, '') ?? 'https://cms.nextwave.web.id';
+
 // Access token disimpan di MEMORI (bukan localStorage) untuk menekan risiko
 // pencurian token lewat XSS: token tidak persist antar-reload. Sesi dipulihkan
 // dari refresh cookie HttpOnly saat aplikasi dimuat (lihat hasSessionHint).

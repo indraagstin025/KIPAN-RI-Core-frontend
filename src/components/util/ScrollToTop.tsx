@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 
 // ScrollToTop menangani posisi scroll setiap navigasi:
 // - bila ada hash (#section) → scroll ke elemen tersebut (dengan offset navbar),
-//   memungkinkan navigasi antar-halaman ke section landing (mis. "/#tentang").
+//   memungkinkan navigasi antar-halaman ke section landing (mis. "/#daftar").
 // - selain itu → reset ke atas agar halaman baru tampil dari awal.
 export const HEADER_OFFSET = 80;
 

@@ -1,6 +1,5 @@
 export const NAV_ITEMS = [
   { label: 'Beranda', href: '/#beranda' },
-  { label: 'Tentang', href: '/#tentang' },
   { label: 'Pendaftaran', href: '/#daftar' },
   { label: 'Alur', href: '/#alur' },
   { label: 'Lacak', href: '/lacak' },

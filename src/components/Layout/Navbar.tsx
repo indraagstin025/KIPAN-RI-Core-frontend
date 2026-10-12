@@ -32,7 +32,7 @@ export default function Navbar() {
   useEffect(() => {
     if (!isHome) return;
 
-    const sectionIds = ['beranda', 'tentang', 'daftar', 'alur'];
+    const sectionIds = ['beranda', 'daftar', 'alur'];
     const handleSectionScroll = () => {
       const scrollPos = window.scrollY + 130;
       for (let i = sectionIds.length - 1; i >= 0; i--) {
