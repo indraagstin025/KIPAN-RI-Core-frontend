@@ -7,7 +7,6 @@ import { Card, ErrorBox, Loading, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
 import PromotePengurusWizard from '@/features/kepengurusan/components/PromotePengurusWizard';
 import { canPromotePengurus } from '@/features/kepengurusan/roles';
-import KtaCardPreview from '@/features/kta/components/KtaCardPreview';
 import { presignView } from '@/features/storage/api/storageService';
 import DokumenViewerModal, { type ViewerDokumen } from '@/features/verification/components/DokumenViewerModal';
 import { buatWatermark } from '@/features/verification/lib/watermark';
@@ -63,6 +62,7 @@ export default function AnggotaDetailPage() {
   const [ktaMsg, setKtaMsg] = useState<string | null>(null);
   const [regen, setRegen] = useState(false);
   const [unduh, setUnduh] = useState(false);
+  const [ktaLoading, setKtaLoading] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
@@ -219,6 +219,27 @@ export default function AnggotaDetailPage() {
       matikanGrace();
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal mengunci verifikasi');
+    }
+  }
+
+  async function tampilkanKTA(): Promise<void> {
+    if (!item) return;
+    // Kartu ASLI dari server (desain template resmi), bukan pratinjau contoh.
+    setError(null);
+    setKtaLoading(true);
+    try {
+      const res = await adminKtaUrl(item.id, 'png');
+      const pembuka = user?.name?.trim() || user?.email || 'ADMIN';
+      setDokumen({
+        label: `KTA ${item.nia}`,
+        url: res.download_url,
+        isPdf: false,
+        watermark: buatWatermark(pembuka),
+      });
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Kartu belum tersedia');
+    } finally {
+      setKtaLoading(false);
     }
   }
 
@@ -494,21 +515,17 @@ export default function AnggotaDetailPage() {
 
         {tab === 'kartu' && (
           <div>
-            <KtaCardPreview
-              data={{
-                nia: item.nia,
-                namaLengkap: item.nama_lengkap,
-                status: item.status,
-                tipe: item.tipe,
-                jabatan: item.riwayat?.trim() || 'Anggota',
-                provinsiNama: item.provinsi_nama,
-                kabupatenNama: item.kabupaten_nama,
-                tanggalAngkat: item.tanggal_angkat,
-                email: item.email,
-                whatsapp: item.whatsapp,
-              }}
-              fotoUrl={fotoUrl}
-            />
+            <Card>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-kipan-text-muted">Kartu Tanda Anggota (Desain Resmi)</h2>
+              <p className="mt-2 text-sm text-kipan-text-muted">
+                Pratinjau di bawah adalah kartu asli dari server (sesuai template yang berlaku), dibuka ber-watermark.
+              </p>
+              <div className="mt-4">
+                <Button variant="accent" onClick={() => void tampilkanKTA()} disabled={ktaLoading}>
+                  {ktaLoading ? 'Menyiapkan…' : 'Tampilkan Kartu Resmi'}
+                </Button>
+              </div>
+            </Card>
             <p className="mt-4 text-xs text-kipan-text-muted">
               Untuk berkas resmi, gunakan tombol <b>Unduh PDF KTA</b> di atas.
             </p>

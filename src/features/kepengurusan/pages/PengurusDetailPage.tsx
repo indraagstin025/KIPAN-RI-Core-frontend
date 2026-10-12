@@ -4,10 +4,9 @@ import Button from '@/components/ui/button';
 import { Alert, SelectInput, TextInput } from '@/components/ui/fields';
 import { Card, ErrorBox, Loading, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
-import { adminAnggotaActivity } from '@/features/anggota/api/anggotaService';
+import { adminAnggotaActivity, adminKtaUrl } from '@/features/anggota/api/anggotaService';
 import AnggotaFormModal from '@/features/anggota/components/AnggotaFormModal';
 import type { ActivityLog } from '@/features/audit/types';
-import KtaCardPreview from '@/features/kta/components/KtaCardPreview';
 import { presignView } from '@/features/storage/api/storageService';
 import DokumenViewerModal, { type ViewerDokumen } from '@/features/verification/components/DokumenViewerModal';
 import { buatWatermark } from '@/features/verification/lib/watermark';
@@ -97,6 +96,7 @@ export default function PengurusDetailPage() {
 
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [ktaLoading, setKtaLoading] = useState(false);
   // KTP-37: penampil dokumen dalam aplikasi + watermark (ganti tab S3 baru).
   const [dokumen, setDokumen] = useState<ViewerDokumen | null>(null);
   const [membuka, setMembuka] = useState<string | null>(null);
@@ -183,6 +183,27 @@ export default function PengurusDetailPage() {
       setAksiError(e instanceof ApiError ? e.message : 'Aksi gagal diproses');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function tampilkanKTA(): Promise<void> {
+    if (!anggota) return;
+    // Kartu ASLI dari server (desain template resmi), bukan pratinjau contoh.
+    setError(null);
+    setKtaLoading(true);
+    try {
+      const res = await adminKtaUrl(anggota.id, 'png');
+      const pembuka = user?.name?.trim() || user?.email || 'ADMIN';
+      setDokumen({
+        label: `KTA ${anggota.nia}`,
+        url: res.download_url,
+        isPdf: false,
+        watermark: buatWatermark(pembuka),
+      });
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Kartu belum tersedia');
+    } finally {
+      setKtaLoading(false);
     }
   }
 
@@ -498,21 +519,23 @@ export default function PengurusDetailPage() {
 
         {tab === 'kartu' && (
           <div>
-            <KtaCardPreview
-              data={{
-                nia: pengurus.nia,
-                namaLengkap: pengurus.nama_lengkap,
-                status: pengurus.status,
-                tipe: pengurus.level === 'NASIONAL' ? 'PENGURUS NASIONAL' : 'PENGURUS',
-                jabatan: `${pengurus.jabatan}${pengurus.is_inti ? ' (inti)' : ''}`,
-                provinsiNama: pengurus.provinsi_nama,
-                kabupatenNama: pengurus.kabupaten_nama,
-                tanggalAngkat: pengurus.tanggal_mulai,
-                email: anggota?.email,
-                whatsapp: anggota?.whatsapp,
-              }}
-              fotoUrl={fotoUrl}
-            />
+            <Card>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-kipan-text-muted">Kartu Tanda Anggota (Desain Resmi)</h2>
+              {!anggota ? (
+                <p className="mt-3 text-sm text-kipan-text-muted">Data anggota tertaut tidak tersedia.</p>
+              ) : (
+                <>
+                  <p className="mt-2 text-sm text-kipan-text-muted">
+                    Pratinjau di bawah adalah kartu asli dari server (sesuai template yang berlaku), dibuka ber-watermark.
+                  </p>
+                  <div className="mt-4">
+                    <Button variant="accent" onClick={() => void tampilkanKTA()} disabled={ktaLoading}>
+                      {ktaLoading ? 'Menyiapkan…' : 'Tampilkan Kartu Resmi'}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </Card>
           </div>
         )}
       </div>
