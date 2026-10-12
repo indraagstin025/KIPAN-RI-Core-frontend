@@ -16,7 +16,6 @@ import LaporanPage from './features/laporan/pages/LaporanPage';
 import AuditPage from './features/audit/pages/AuditPage';
 import LogKeputusanPage from './features/audit/pages/LogKeputusanPage';
 import RolePage from './features/roles/pages/RolePage';
-import OrganisasiPage from './features/organisasi/pages/OrganisasiPage';
 import BackupPage from './features/backup/pages/BackupPage';
 import DetailPage from './features/verification/pages/DetailPage';
 import WilayahPage from './features/wilayah/pages/WilayahPage';
@@ -41,7 +40,6 @@ const ADMIN_ROUTES: AdminRoute[] = [
   { path: '/admin/audit', roles: SUPER_NASIONAL, element: <AuditPage /> },
   { path: '/admin/keputusan', roles: SUPER_NASIONAL, element: <LogKeputusanPage /> },
   { path: '/admin/roles', roles: SUPER_SAJA, element: <RolePage /> },
-  { path: '/admin/organisasi', roles: SUPER_SAJA, element: <OrganisasiPage /> },
   { path: '/admin/backup', roles: SUPER_SAJA, element: <BackupPage /> },
   { path: '/admin/kta-template', roles: SUPER_NASIONAL, element: <TemplatePage /> },
   { path: '/admin/pendaftaran', element: <AntreanPage /> },

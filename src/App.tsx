@@ -19,7 +19,6 @@ import ValidasiKtaPage from './features/kta/pages/ValidasiKtaPage';
 import DaftarPage from './features/pendaftaran/pages/DaftarPage';
 import LacakPage from './features/tracking/pages/LacakPage';
 import RevisiPage from './features/tracking/pages/RevisiPage';
-import OrganisasiPublicPage from './features/organisasi/pages/OrganisasiPublicPage';
 import PrivasiPage from './features/dsar/pages/PrivasiPage';
 import LandingPage from './pages/public/LandingPage';
 
@@ -43,7 +42,6 @@ export default function App() {
           <Route path="/validasi-kta/:nia" element={<ValidasiKtaPage />} />
           <Route path="/v/:nia" element={<ValidasiKtaPage />} />
           <Route path="/anggota" element={<CekAnggotaPage />} />
-          <Route path="/profil" element={<OrganisasiPublicPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/lupa-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />

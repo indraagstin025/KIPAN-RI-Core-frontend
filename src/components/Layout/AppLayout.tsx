@@ -14,7 +14,6 @@ import {
   GearIcon,
   GlobeIcon,
   GroupIcon,
-  HomeIcon,
   IdCardIcon,
   InfoCircledIcon,
   LayersIcon,
@@ -114,11 +113,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { to: '/admin/keputusan', label: 'Log Keputusan', icon: CheckCircledIcon },
   ] : [];
   const rolesNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/roles', label: 'Role & Wewenang', icon: MixIcon }] : [];
-  const organisasiNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/organisasi', label: 'Profil Organisasi', icon: HomeIcon }] : [];
   const backupNav: NavItem[] = user?.role === 'SUPER_ADMIN' ? [{ to: '/admin/backup', label: 'Database Backup', icon: ArchiveIcon }] : [];
   const ktaTemplateNav: NavItem[] = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL' ? [{ to: '/admin/kta-template', label: 'Template KTA', icon: IdCardIcon }] : [];
   const mfaNav: NavItem[] = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_NASIONAL' ? [{ to: '/akun/keamanan', label: 'Keamanan MFA', icon: MobileIcon }] : [];
-  const nav = admin ? [...ADMIN_NAV, ...wilayahNav, ...jabatanNav, ...usersNav, ...outboxNav, ...auditNav, ...rolesNav, ...organisasiNav, ...backupNav, ...ktaTemplateNav, ...ACCOUNT_NAV, ...mfaNav] : [...USER_NAV, ...ACCOUNT_NAV];
+  const nav = admin ? [...ADMIN_NAV, ...wilayahNav, ...jabatanNav, ...usersNav, ...outboxNav, ...auditNav, ...rolesNav, ...backupNav, ...ktaTemplateNav, ...ACCOUNT_NAV, ...mfaNav] : [...USER_NAV, ...ACCOUNT_NAV];
   const bisaMfa = mfaNav.length > 0;
   const menuItemCls = 'flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-kipan-text-dark transition hover:bg-kipan-soft-gray';
 
