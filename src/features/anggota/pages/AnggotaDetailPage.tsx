@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Button from '@/components/ui/button';
+import StepUpModal from '@/components/ui/StepUpModal';
+import { Alert } from '@/components/ui/fields';
 import { Card, ErrorBox, Loading, StatusBadge } from '@/components/ui/stateful';
 import { useAuth } from '@/context/AuthContext';
 import PromotePengurusWizard from '@/features/kepengurusan/components/PromotePengurusWizard';
@@ -19,6 +21,7 @@ import {
   adminKtaUrl,
   adminRegenerateKta,
   resetMemberPassword,
+  revealAnggotaNik,
 } from '../api/anggotaService';
 import AnggotaFormModal from '../components/AnggotaFormModal';
 import type { AnggotaDetail, AnggotaRiwayatItem } from '../types';
@@ -67,6 +70,46 @@ export default function AnggotaDetailPage() {
   // KTP-37: penampil dokumen dalam aplikasi + watermark (ganti tab S3 baru).
   const [dokumen, setDokumen] = useState<ViewerDokumen | null>(null);
   const [membuka, setMembuka] = useState<string | null>(null);
+  // Buka NIK anggota (cerminan halaman verifikasi): step-up + grace K8.
+  const [nik, setNik] = useState<string | null>(null);
+  const [stepUpOpen, setStepUpOpen] = useState(false);
+  const [graceUntil, setGraceUntil] = useState<number | null>(null);
+  const [graceAktif, setGraceAktif] = useState(false);
+  const graceTimer = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (graceTimer.current !== null) window.clearTimeout(graceTimer.current);
+  }, []);
+
+  function terapkanGrace(expiresIn: number): void {
+    if (graceTimer.current !== null) window.clearTimeout(graceTimer.current);
+    setGraceUntil(Date.now() + expiresIn * 1000);
+    setGraceAktif(true);
+    graceTimer.current = window.setTimeout(() => {
+      setGraceAktif(false);
+      setGraceUntil(null);
+    }, expiresIn * 1000);
+  }
+
+  function matikanGrace(): void {
+    if (graceTimer.current !== null) window.clearTimeout(graceTimer.current);
+    setGraceAktif(false);
+    setGraceUntil(null);
+  }
+
+  async function sinkronGrace(): Promise<boolean> {
+    try {
+      const { nikGraceStatus } = await import('@/features/auth/api/authService');
+      const st = await nikGraceStatus();
+      if (st.active && st.expires_in > 0) {
+        terapkanGrace(st.expires_in);
+        return true;
+      }
+    } catch {
+      // Grace tidak aktif / offline — pemanggil yang memutuskan.
+    }
+    return false;
+  }
 
   const [riwayat, setRiwayat] = useState<AnggotaRiwayatItem[]>([]);
   const [riwayatLoading, setRiwayatLoading] = useState(false);
@@ -134,6 +177,48 @@ export default function AnggotaDetailPage() {
       setError(e instanceof ApiError ? e.message : 'Gagal membuka dokumen');
     } finally {
       setMembuka(null);
+    }
+  }
+
+  async function bukaNik(): Promise<void> {
+    if (!item) return;
+    // Pola identik halaman verifikasi: server sumber kebenaran (403 → modal).
+    setError(null);
+    try {
+      if (!graceAktif && !(await sinkronGrace())) {
+        setStepUpOpen(true);
+        return;
+      }
+      setNik((await revealAnggotaNik(item.id)).nik);
+    } catch (e: unknown) {
+      if (e instanceof ApiError && e.status === 403 && /verifikasi ulang|kedaluwarsa/i.test(e.message)) {
+        matikanGrace();
+        setStepUpOpen(true);
+        return;
+      }
+      setError(e instanceof ApiError ? e.message : 'Gagal membuka NIK');
+    }
+  }
+
+  async function bukaNikDenganToken(token: string): Promise<void> {
+    if (!item) return;
+    setError(null);
+    try {
+      setNik((await revealAnggotaNik(item.id, token)).nik);
+      await sinkronGrace();
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Gagal membuka NIK');
+    }
+  }
+
+  async function kunciGrace(): Promise<void> {
+    setError(null);
+    try {
+      const { lockNikGrace } = await import('@/features/auth/api/authService');
+      await lockNikGrace();
+      matikanGrace();
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : 'Gagal mengunci verifikasi');
     }
   }
 
@@ -245,6 +330,16 @@ export default function AnggotaDetailPage() {
       </div>
 
       {error && <div className="mt-4"><ErrorBox message={error} /></div>}
+      {graceAktif && graceUntil !== null && (
+        <div className="mt-4">
+          <Alert kind="info">
+            <span>
+              Verifikasi NIK aktif sampai {new Date(graceUntil).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}.{' '}
+              <button type="button" onClick={() => void kunciGrace()} className="font-semibold underline">Kunci sekarang</button>
+            </span>
+          </Alert>
+        </div>
+      )}
       {(resetMsg || ktaMsg) && (
         <div className="mt-4 rounded-lg border border-kipan-green/40 bg-emerald-50 p-4 text-sm">
           <p className="font-bold text-kipan-green">Berhasil</p>
@@ -274,6 +369,18 @@ export default function AnggotaDetailPage() {
               <h2 className="text-sm font-bold uppercase tracking-wide text-kipan-text-muted">Biodata</h2>
               <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
                 <InfoRow label="NIA" value={item.nia} />
+                <InfoRow
+                  label="NIK"
+                  value={
+                    nik ? (
+                      <span className="font-mono font-semibold">{nik}</span>
+                    ) : (
+                      <button type="button" onClick={() => void bukaNik()} className="font-semibold text-kipan-blue hover:underline">
+                        Buka NIK (tercatat audit)
+                      </button>
+                    )
+                  }
+                />
                 <InfoRow label="Nama Lengkap" value={item.nama_lengkap} />
                 <InfoRow label="Tempat Lahir" value={item.tempat_lahir} />
                 <InfoRow label="Tanggal Lahir" value={formatTanggal(item.tanggal_lahir)} />
@@ -419,6 +526,12 @@ export default function AnggotaDetailPage() {
 
       <AnggotaFormModal open={showForm} member={item} onClose={() => setShowForm(false)} onDone={load} />
       <DokumenViewerModal dokumen={dokumen} onClose={() => setDokumen(null)} />
+      <StepUpModal
+        open={stepUpOpen}
+        title="Buka NIK — verifikasi ulang"
+        onClose={() => setStepUpOpen(false)}
+        onToken={(tok) => void bukaNikDenganToken(tok)}
+      />
     </div>
   );
 }

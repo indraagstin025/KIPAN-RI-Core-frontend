@@ -6,6 +6,14 @@ export function checkPublic(nia: string): Promise<AnggotaPublicInfo> {
   return apiFetch<AnggotaPublicInfo>(`/anggota/cek?q=${encodeURIComponent(nia)}`);
 }
 
+// revealAnggotaNik: buka NIK anggota (cerminan revealNik pendaftaran).
+// Wajib step-up (token) atau grace K8 aktif; teraudit di server.
+export function revealAnggotaNik(id: number, stepUpToken?: string): Promise<{ nik: string }> {
+  return apiFetch<{ nik: string }>(`/admin/anggota/${id}/nik`, {
+    headers: stepUpToken ? { 'X-StepUp-Token': stepUpToken } : undefined,
+  });
+}
+
 export function adminListAnggota(q: AnggotaQuery): Promise<Paginated<AnggotaListItem[]>> {
   const p = new URLSearchParams();
   p.set('page', String(q.page ?? 1));
