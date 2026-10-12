@@ -53,13 +53,26 @@ export default function TemplatePage() {
   useEffect(() => {
     let alive = true;
     const urls: string[] = [];
+    // Coba sekali lagi hanya untuk gagal jaringan (status 0): menutup
+    // transfer besar yang terpenggal di tengah. Salah 4xx/5xx tidak diulang.
+    async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+      try {
+        return await fn();
+      } catch (e: unknown) {
+        if (e instanceof ApiError && e.status === 0) return await fn();
+        throw e;
+      }
+    }
     (async () => {
       try {
-        const [lay, front, back] = await Promise.all([
-          getKtaTemplateLayout(),
-          getKtaTemplateBackground('front'),
-          getKtaTemplateBackground('back'),
-        ]);
+        // Berurutan (bukan paralel): layout dulu untuk versi cache,
+        // lalu aset satu per satu agar tak berebut koneksi dingin.
+        const lay = await withRetry(() => getKtaTemplateLayout());
+        if (!alive) return;
+        const v = lay.template.version;
+        const front = await withRetry(() => getKtaTemplateBackground('front', v));
+        if (!alive) return;
+        const back = await withRetry(() => getKtaTemplateBackground('back', v));
         if (!alive) return;
         urls.push(front, back);
         setLayout(lay);
@@ -74,7 +87,7 @@ export default function TemplatePage() {
             (n): n is string => typeof n === 'string' && n.length > 0,
           );
           for (const n of [...new Set(names)]) {
-            const u = await getKtaTemplateFont(n);
+            const u = await withRetry(() => getKtaTemplateFont(n, v));
             urls.push(u);
             const face = new FontFace('KTA Template', `url(${u})`, {
               weight: /bold/i.test(n) ? '700' : '400',

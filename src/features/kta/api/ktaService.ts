@@ -75,20 +75,21 @@ export function getKtaTemplateLayout(): Promise<TemplateLayout> {
 }
 
 // getKtaTemplateBackground: PNG latar sisi depan|belakang sebagai object URL
-// (tool kalibrasi). Pemanggil wajib revoke setelah dipakai.
-export async function getKtaTemplateBackground(side: 'front' | 'back'): Promise<string> {
+// (tool kalibrasi). v = versi template untuk invalidasi cache immutable.
+// Pemanggil wajib revoke setelah dipakai.
+export async function getKtaTemplateBackground(side: 'front' | 'back', v?: string): Promise<string> {
   const res = await api.get('/admin/kta-template/background', {
-    params: { side },
+    params: v ? { side, v } : { side },
     responseType: 'blob',
   });
   return URL.createObjectURL(res.data as Blob);
 }
 
 // getKtaTemplateFont: berkas fonta template sebagai object URL (tool
-// kalibrasi). Pemanggil wajib revoke setelah dipakai.
-export async function getKtaTemplateFont(name: string): Promise<string> {
+// kalibrasi). v = versi template. Pemanggil wajib revoke setelah dipakai.
+export async function getKtaTemplateFont(name: string, v?: string): Promise<string> {
   const res = await api.get('/admin/kta-template/font', {
-    params: { name },
+    params: v ? { name, v } : { name },
     responseType: 'blob',
   });
   return URL.createObjectURL(res.data as Blob);
