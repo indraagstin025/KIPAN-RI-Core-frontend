@@ -8,6 +8,8 @@ import { presignView } from '@/features/storage/api/storageService';
 import { ApiError } from '@/services/apiClient';
 import { getDetail, processApproval, revealNik } from '../api/verificationService';
 import StepUpModal from '@/components/ui/StepUpModal';
+import DokumenViewerModal, { type ViewerDokumen } from '../components/DokumenViewerModal';
+import { buatWatermark } from '../lib/watermark';
 import type { ApprovalAction, PendaftaranDetail } from '../types';
 
 const DOC_FIELDS: Array<{ field: keyof PendaftaranDetail; label: string }> = [
@@ -50,6 +52,9 @@ export default function DetailPage() {
   const [nik, setNik] = useState<string | null>(null);
   const [hasil, setHasil] = useState<{ nia?: string } | null>(null);
   const [stepUpOpen, setStepUpOpen] = useState(false);
+  // KTP-37: penampil dokumen dalam aplikasi + watermark (ganti tab S3 baru).
+  const [dokumen, setDokumen] = useState<ViewerDokumen | null>(null);
+  const [membuka, setMembuka] = useState<string | null>(null);
   // K8: grace Buka NIK (epoch ms kedaluwarsa + penanda aktif) untuk
   // banner + buka langsung. Kedaluwarsa disembunyikan via timeout, bukan
   // Date.now() saat render (aturan purity).
@@ -109,13 +114,22 @@ export default function DetailPage() {
     return false;
   }
 
-  async function lihatDokumen(key: string): Promise<void> {
+  async function lihatDokumen(key: string, label: string): Promise<void> {
     setError(null);
+    setMembuka(key);
     try {
       const res = await presignView(key);
-      window.open(res.view_url, '_blank', 'noopener');
+      const pembuka = user?.name?.trim() || user?.email || 'ADMIN';
+      setDokumen({
+        label,
+        url: res.view_url,
+        isPdf: /\.pdf$/i.test(key),
+        watermark: buatWatermark(pembuka),
+      });
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : 'Gagal membuka dokumen');
+    } finally {
+      setMembuka(null);
     }
   }
 
@@ -265,8 +279,13 @@ export default function DetailPage() {
                 <li key={d.field} className="flex items-center justify-between gap-3">
                   <span className="text-kipan-text-dark">{d.label}</span>
                   {ada ? (
-                    <button type="button" onClick={() => void lihatDokumen(key as string)} className="font-semibold text-kipan-blue hover:underline">
-                      Lihat
+                    <button
+                      type="button"
+                      disabled={membuka === (key as string)}
+                      onClick={() => void lihatDokumen(key as string, d.label)}
+                      className="font-semibold text-kipan-blue hover:underline disabled:opacity-60"
+                    >
+                      {membuka === (key as string) ? 'Membuka…' : 'Lihat'}
                     </button>
                   ) : (
                     <span className="text-xs text-kipan-text-muted">— tidak ada</span>
@@ -319,6 +338,7 @@ export default function DetailPage() {
         onClose={() => setStepUpOpen(false)}
         onToken={(tok) => void bukaNikDenganToken(tok)}
       />
+      <DokumenViewerModal dokumen={dokumen} onClose={() => setDokumen(null)} />
     </div>
   );
 }
